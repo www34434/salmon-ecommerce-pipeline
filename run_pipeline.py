@@ -71,17 +71,26 @@ def stage_sourcing(run_dir, prev, keyword, mock):
     stage = "sourcing"
     out = os.path.join(run_dir, "candidate_products.json")
     creds, missing = env_available(["CART_API_KEY"])
-    if not creds:
-        log(stage, f"CART_API_KEY 未配置 ({missing})，进入模拟模式")
-    else:
-        log(stage, "CART_API_KEY 已配置，尝试调用 Cart MCP search_products...")
-        # 真实调用需 @usecart/mcp-server 已注册到 agent；此处通过 npx 探测
-        rc, so, se = run_cmd(["npx", "-y", "@usecart/mcp-server", "--help"], timeout=60)
+    if creds:
+        log(stage, "CART_API_KEY 已配置，调用 Cart REST API 实时找品...")
+        rc, so, se = run_cmd([sys.executable, os.path.join(HERE, "cart_api_client.py"),
+                              "--keyword", keyword, "--out", out], timeout=120)
         if rc == 0:
-            log(stage, "Cart MCP server 可用，请通过 AI agent 执行 /product-research 获取真实数据")
-        else:
-            log(stage, f"Cart MCP 不可用 ({se[:80]})，回退模拟模式")
-        creds = False  # 实际数据需 agent 编排，降级模拟
+            log(stage, f"live 模式成功: {so.strip().splitlines()[-1] if so.strip() else ''}")
+            return read_json(out)
+        log(stage, f"Cart live 调用失败 (rc={rc}: {(se or so).strip()[:120]})，尝试 APIFY 备选")
+    # APIFY 备选方案（usecart 注册受阻 / Cart API 不可用时）
+    apify_creds, _ = env_available(["APIFY_TOKEN"])
+    if apify_creds:
+        log(stage, "APIFY_TOKEN 已配置，调用 Apify Amazon Scraper 实时找品...")
+        rc, so, se = run_cmd([sys.executable, os.path.join(HERE, "apify_sourcing_client.py"),
+                              "--keyword", keyword, "--out", out], timeout=420)
+        if rc == 0:
+            log(stage, f"live 模式成功 (apify): {so.strip().splitlines()[-1] if so.strip() else ''}")
+            return read_json(out)
+        log(stage, f"Apify live 调用失败 (rc={rc}: {(se or so).strip()[:120]})，回退模拟模式")
+    elif not creds:
+        log(stage, "APIFY_TOKEN 亦未配置，进入模拟模式（获取: apify.com → Settings → API & Integrations）")
     # 模拟产物
     data = {
         "keyword": keyword,
