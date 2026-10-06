@@ -1,0 +1,152 @@
+{
+  "name": "salmon-ecommerce-pipeline",
+  "version": "1.0.0",
+  "industry": "salmon",
+  "description": "三文鱼电商全链路 6-Skill 流水线注册表",
+  "stages": [
+    {
+      "id": "sourcing",
+      "name_cn": "找品",
+      "name_en": "Product Discovery",
+      "repo_dir": "ecommerce-skills",
+      "repo_url": "https://github.com/FlatNineOrg/ecommerce-skills",
+      "module": "ecommerce-skills",
+      "interface_type": "agent_skill + mcp",
+      "entrypoints": {
+        "skills": [
+          "/product-research <keyword>",
+          "/trend-alert",
+          "/niche-analysis <keyword>",
+          "/supplier-finder <product type>"
+        ],
+        "mcp_server": "@usecart/mcp-server",
+        "mcp_tools": ["search_products", "get_trending"]
+      },
+      "required_env": ["CART_API_KEY"],
+      "input": "keyword (salmon / 三文鱼 / smoked salmon)",
+      "output_file": "candidate_products.json",
+      "output_schema": {
+        "keyword": "string",
+        "candidates": "array[{sku,title,price,store,trending,velocity}]",
+        "pricing": "object{min,max,median,common[]}",
+        "vendors": "array[{name,product_count}]",
+        "suppliers": "array[{name,origin,type}]",
+        "opportunity_score": "number",
+        "recommended_focus": "string"
+      }
+    },
+    {
+      "id": "data",
+      "name_cn": "数据",
+      "name_en": "Data Extraction",
+      "repo_dir": "apify-mcp-server",
+      "repo_url": "https://github.com/apify/apify-mcp-server",
+      "module": "apify-mcp-server",
+      "interface_type": "mcp_server",
+      "entrypoints": {
+        "stdio": "npx @apify/actors-mcp-server",
+        "https": "https://mcp.apify.com",
+        "mcp_tools": ["search-actors", "fetch-actor-details", "call-actor", "get-actor-run", "get-dataset-items", "get-key-value-store-record", "abort-actor-run"],
+        "default_actors": ["rag-web-browser", "web-fetch"],
+        "salmon_actors_hint": ["Amazon Product Scraper", "Google Shopping Scraper", "Instagram Scraper", "Facebook Posts Scraper", "Google Maps Email Extractor"]
+      },
+      "required_env": ["APIFY_TOKEN"],
+      "input": "competitor domains + product keywords (from stage sourcing)",
+      "output_file": "competitive_intel.json",
+      "output_schema": {
+        "competitors": "array[{domain,traffic,top_skus[],price_range[]}]",
+        "reviews": "object{avg,negatives[],positives[]}",
+        "ad_activity": "array[{platform,creative,duration}]",
+        "supply_chain_signals": "object{origin_concentration,cold_chain_tech}"
+      }
+    },
+    {
+      "id": "operation",
+      "name_cn": "运营",
+      "name_en": "Business Operation",
+      "repo_dir": "DeskcommCRM",
+      "repo_url": "https://github.com/melgarafael/DeskcommCRM",
+      "module": "DeskcommCRM",
+      "interface_type": "mcp_endpoint + rest_api",
+      "entrypoints": {
+        "mcp_endpoint": "app/api/mcp/route.ts",
+        "rest_api": ["/api/v1/team", "/api/v1/contacts", "/api/v1/products", "/api/v1/tasks"],
+        "modules": ["funnels (漏斗)", "contacts (联系人)", "tasks (任务)", "products (商品)", "stages (阶段)"]
+      },
+      "tech_stack": ["Next.js", "TypeScript", "Supabase (Postgres/Auth/RLS/Realtime/Storage)"],
+      "required_env": ["SUPABASE_URL", "SUPABASE_KEY", "DATABASE_URL"],
+      "input": "candidate products + competitive intel (from stages sourcing, data)",
+      "output_file": "operation_plan.json",
+      "output_schema": {
+        "selected_skus": "array[{sku,title,target_price,stage}]",
+        "funnel_stages": "string[]",
+        "contacts": "array[{name,role}]",
+        "tasks": "array[{title,owner,due,priority}]",
+        "kpi": "object{target_gmv,target_conv,repurchase_rate}"
+      }
+    },
+    {
+      "id": "image",
+      "name_cn": "图片",
+      "name_en": "Product Image",
+      "repo_dir": "ecommerce-image-suite",
+      "repo_url": "https://github.com/wzj177/ecommerce-image-suite",
+      "module": "ecommerce-image-suite",
+      "interface_type": "python_scripts + agent_skill",
+      "entrypoints": {
+        "check": "scripts/check_providers.py",
+        "analyze": "scripts/analyze.py <image> -> product.json",
+        "generate": "scripts/generate.py -> image_set/",
+        "skill": "SKILL.md"
+      },
+      "image_types": ["white_bg", "key_features", "selling_pt", "material", "lifestyle", "model", "multi_scene", "ecommerce_detail", "three_angle_view"],
+      "platform_specs": {"taobao": "800x800", "douyin": "1080x1080", "amazon": "2000x2000"},
+      "required_env": ["DASHSCOPE_API_KEY (推荐) | ARK_API_KEY | OPENAI_API_KEY | GEMINI_API_KEY | STABILITY_API_KEY"],
+      "input": "selected salmon SKU + original product photo (from stage operation)",
+      "output_file": "image_set/ + image_manifest.json"
+    },
+    {
+      "id": "advertising",
+      "name_cn": "广告",
+      "name_en": "Advertising",
+      "repo_dir": "Generative-Media-Skills",
+      "repo_url": "https://github.com/SamurAIGPT/Generative-Media-Skills",
+      "module": "Generative-Media-Skills",
+      "interface_type": "mcp_server + cli + agent_skills",
+      "entrypoints": {
+        "mcp_tools_count": 19,
+        "recipe_packs": ["ad-creative (广告创意集)", "product-video-ad-maker (商品视频广告)", "cinematic-product-ad (电影感广告)", "ugc-ads-workflow (UGC种草)"],
+        "capabilities": ["text-to-image", "image-to-video", "audio-generation", "image-enhance", "upload"]
+      },
+      "required_env": ["图像/视频生成 Provider Key (可复用 image 环节凭证)"],
+      "input": "salmon product images + brand brief + audience (from stage image)",
+      "output_file": "ad_creatives/ + ad_manifest.json"
+    },
+    {
+      "id": "aftersales",
+      "name_cn": "售后",
+      "name_en": "After-sales",
+      "repo_dir": "mall-ai-after-sales-platform",
+      "repo_url": "https://github.com/Eleven617/mall-ai-after-sales-platform",
+      "module": "mall-ai-after-sales-platform",
+      "interface_type": "fastapi_runtime + java_backend + vue_frontend + mcp",
+      "entrypoints": {
+        "runtime": "mall-ai-service/app/runtime/ (任务状态机/Skill白名单/Proposal)",
+        "services": "mall-ai-service/app/services/ (售后编排/RAG/MCP/Trace/评测)",
+        "java_backend": "mall2/mall-portal + mall2/mall-admin (订单事实/权限/幂等/事务)",
+        "frontend": "mall-ai-web/src/ (客户/运营/质量/人工视图)",
+        "mcp_service": "mall-ai-service/app/services (MCP)",
+        "startup": "scripts/Prepare-PublicDemo.ps1",
+        "endpoints": ["http://127.0.0.1:5173 (Vue)", "http://127.0.0.1:8000/docs (FastAPI)", "http://127.0.0.1:8085 (Java)"]
+      },
+      "tech_stack": ["Python/FastAPI/Pydantic", "Java Spring Boot/MySQL/Redis/RabbitMQ/Outbox", "Vue/Vite"],
+      "capabilities": ["售后开放任务", "可信确认写入", "政策问答(RAG)", "暂停恢复", "事实变化重规划", "运营质量工作台"],
+      "required_env": ["Docker Desktop", "Provider Key (DeepSeek 等)"],
+      "input": "customer natural-language complaint + order facts",
+      "output_file": "after_sales_report.json",
+      "feedback_loop": "负面词云/复购画像 -> 回流到 stage data (下一轮校准)"
+    }
+  ],
+  "data_flow": "sourcing -> data -> operation -> image -> advertising -> aftersales",
+  "feedback_loop": "aftersales -> data (负面词云/复购画像回流)"
+}

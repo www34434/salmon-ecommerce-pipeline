@@ -1,0 +1,34 @@
+{
+  "reference_image": "image_set/场景展示图.jpg",
+  "recipe": "muapi-product-video-ad-maker (Phase A=Stage4套图, Phase B=wan i2v)",
+  "model": "wan2.6-i2v-flash",
+  "creatives": [
+    {
+      "type": "product_video_ad",
+      "path": "ad_creatives/salmon_product_ad.mp4",
+      "duration_estimate": "5-10s",
+      "platform": [
+        "douyin",
+        "shipinhao",
+        "xiaohongshu"
+      ],
+      "source_image": "image_set/场景展示图.jpg"
+    },
+    {
+      "type": "copy_main",
+      "copy": "挪威原切 · 刺身级 · 一口尝尽北大西洋",
+      "platform": "douyin"
+    },
+    {
+      "type": "copy_variant_B",
+      "copy": "优质新鲜｜天然食材｜精致摆盘",
+      "platform": "xiaohongshu"
+    },
+    {
+      "type": "copy_variant_C",
+      "copy": "健身餐必备：高蛋白低脂三文鱼，每周直送",
+      "platform": "taobao"
+    }
+  ],
+  "prompt": "A cinematic product advertisement video. Smooth, slow-motion camera movement panning across the fresh premium salmon fillet on the slate plate. Subtle environmental movements: soft kitchen light shifting, gentle light reflections on the moist flesh, mint leaves swaying slightly. High-quality commercial food cinematography, elegant transitions, appetizing professional look."
+}

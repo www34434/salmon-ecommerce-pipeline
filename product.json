@@ -1,0 +1,57 @@
+{
+  "product_name": "新鲜三文鱼刺身片",
+  "product_description_for_prompt": "Fresh salmon sashimi slice with vibrant orange color, delicate marbling, garnished with mint leaf on dark stone plate.",
+  "product_type": "食品",
+  "garment_position": "non-apparel",
+  "visual_features": [
+    "鲜亮橙色纹理",
+    "薄荷叶点缀"
+  ],
+  "selling_points": [
+    {
+      "icon": "quality",
+      "zh": "优质新鲜",
+      "en": "Premium Freshness",
+      "zh_desc": "肉质紧实，纹理清晰",
+      "en_desc": "Firm texture, clear marbling",
+      "visual_keywords": [
+        "fresh",
+        "vibrant"
+      ]
+    },
+    {
+      "icon": "material",
+      "zh": "天然食材",
+      "en": "Natural Ingredient",
+      "zh_desc": "纯正三文鱼，无添加",
+      "en_desc": "Pure salmon, no additives",
+      "visual_keywords": [
+        "natural",
+        "raw"
+      ]
+    },
+    {
+      "icon": "design",
+      "zh": "精致摆盘",
+      "en": "Elegant Presentation",
+      "zh_desc": "薄荷点缀，视觉升级",
+      "en_desc": "Mint garnish, visual appeal",
+      "visual_keywords": [
+        "garnished",
+        "elegant"
+      ]
+    }
+  ],
+  "target_audience": "注重健康饮食与高品质生活的都市人群",
+  "target_scenes": [
+    "日式料理餐厅",
+    "家庭轻食宴请"
+  ],
+  "product_style": "日式简约",
+  "color": "vibrant orange",
+  "material": "三文鱼",
+  "style": "切片",
+  "print_design": "自然肌理纹路",
+  "print_design_lock": "exact same natural marbling pattern and color must not change",
+  "product_name_zh": "三文鱼刺身"
+}

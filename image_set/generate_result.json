@@ -1,0 +1,17 @@
+{
+  "white_bg": {
+    "status": "ok",
+    "path": "image_set/白底主图.jpg",
+    "name": "白底主图"
+  },
+  "key_features": {
+    "status": "ok",
+    "path": "image_set/核心卖点图.jpg",
+    "name": "核心卖点图"
+  },
+  "lifestyle": {
+    "status": "ok",
+    "path": "image_set/场景展示图.jpg",
+    "name": "场景展示图"
+  }
+}
