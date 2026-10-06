@@ -126,10 +126,16 @@ def stage_data(run_dir, prev, keyword, mock):
     candidates = prev.get("candidates", []) if prev else []
     creds, missing = env_available(["APIFY_TOKEN"])
     if not creds:
-        log(stage, f"APIFY_TOKEN 未配置，进入模拟模式")
+        log(stage, "APIFY_TOKEN 未配置，进入模拟模式")
     else:
-        log(stage, "APIFY_TOKEN 已配置，可通过 mcp.apify.com 或 npx @apify/actors-mcp-server 调用 call-actor/get-dataset-items")
-        # 真实调用建议: search-actors -> call-actor(Amazon Product Scraper) -> get-dataset-items
+        log(stage, "APIFY_TOKEN 已配置，调用 Apify 抓取竞品市场信号...")
+        rc, so, se = run_cmd([sys.executable, os.path.join(HERE, "apify_data_client.py"),
+                              "--keyword", keyword, "--out", out], timeout=420)
+        if rc == 0:
+            log(stage, f"live 模式成功: {so.strip().splitlines()[-1] if so.strip() else ''}")
+            return read_json(out)
+        log(stage, f"live 调用失败 (rc={rc}: {(se or so).strip()[:120]})，回退模拟模式")
+        creds = False
     data = {
         "competitors": [
             {"domain": "xianda-ecommerce.com", "traffic": "120k/mo", "top_skus": [c["sku"] for c in candidates[:2]], "price_range": [98, 158]},

@@ -1,0 +1,226 @@
+{
+  "market_signals": {
+    "keyword": "salmon",
+    "products_scraped": 48,
+    "avg_rating": 4.45,
+    "total_reviews": 69338,
+    "total_est_monthly_units": 38600,
+    "competitors": [
+      {
+        "brand": "Chicken of the Sea",
+        "sku_count": 11,
+        "total_reviews": 30499,
+        "avg_rating": 4.5,
+        "price_band": [
+          10.16,
+          99.84
+        ],
+        "est_monthly_units": 9100,
+        "badges": {}
+      },
+      {
+        "brand": "Bumble Bee",
+        "sku_count": 9,
+        "total_reviews": 14002,
+        "avg_rating": 4.49,
+        "price_band": [
+          2.72,
+          110.76
+        ],
+        "est_monthly_units": 5250,
+        "badges": {}
+      },
+      {
+        "brand": "StarKist",
+        "sku_count": 3,
+        "total_reviews": 10479,
+        "avg_rating": 4.6,
+        "price_band": [
+          2.34,
+          22.56
+        ],
+        "est_monthly_units": 2200,
+        "badges": {}
+      },
+      {
+        "brand": "EPIC",
+        "sku_count": 1,
+        "total_reviews": 4124,
+        "avg_rating": 4.0,
+        "price_band": [
+          29.9,
+          29.9
+        ],
+        "est_monthly_units": 2000,
+        "badges": {}
+      },
+      {
+        "brand": "Changing Seas",
+        "sku_count": 1,
+        "total_reviews": 2301,
+        "avg_rating": 4.6,
+        "price_band": [
+          100.0,
+          100.0
+        ],
+        "est_monthly_units": 4000,
+        "badges": {}
+      },
+      {
+        "brand": "Safe Catch",
+        "sku_count": 2,
+        "total_reviews": 2029,
+        "avg_rating": 4.5,
+        "price_band": [
+          29.99,
+          45.34
+        ],
+        "est_monthly_units": 2300,
+        "badges": {}
+      },
+      {
+        "brand": "Wild",
+        "sku_count": 4,
+        "total_reviews": 1748,
+        "avg_rating": 4.42,
+        "price_band": [
+          54.0,
+          117.84
+        ],
+        "est_monthly_units": 1600,
+        "badges": {}
+      },
+      {
+        "brand": "SeaBear",
+        "sku_count": 2,
+        "total_reviews": 1066,
+        "avg_rating": 4.15,
+        "price_band": [
+          14.48,
+          41.99
+        ],
+        "est_monthly_units": 400,
+        "badges": {}
+      },
+      {
+        "brand": "Rubinsteins",
+        "sku_count": 2,
+        "total_reviews": 989,
+        "avg_rating": 4.5,
+        "price_band": [
+          32.67,
+          54.99
+        ],
+        "est_monthly_units": 400,
+        "badges": {}
+      },
+      {
+        "brand": "MW Polar",
+        "sku_count": 1,
+        "total_reviews": 780,
+        "avg_rating": 4.1,
+        "price_band": [
+          4.97,
+          4.97
+        ],
+        "est_monthly_units": 200,
+        "badges": {}
+      },
+      {
+        "brand": "King",
+        "sku_count": 1,
+        "total_reviews": 281,
+        "avg_rating": 4.5,
+        "price_band": [
+          41.99,
+          41.99
+        ],
+        "est_monthly_units": 900,
+        "badges": {}
+      },
+      {
+        "brand": "Rubinstein&#x27;s",
+        "sku_count": 1,
+        "total_reviews": 203,
+        "avg_rating": 4.7,
+        "price_band": [
+          200.16,
+          200.16
+        ],
+        "est_monthly_units": 0,
+        "badges": {}
+      },
+      {
+        "brand": "365 by Whole Foods",
+        "sku_count": 1,
+        "total_reviews": 161,
+        "avg_rating": 4.3,
+        "price_band": [
+          8.49,
+          8.49
+        ],
+        "est_monthly_units": 1000,
+        "badges": {}
+      },
+      {
+        "brand": "NO",
+        "sku_count": 1,
+        "total_reviews": 157,
+        "avg_rating": 4.3,
+        "price_band": [
+          93.0,
+          93.0
+        ],
+        "est_monthly_units": 100,
+        "badges": {}
+      },
+      {
+        "brand": "Organic",
+        "sku_count": 1,
+        "total_reviews": 147,
+        "avg_rating": 4.3,
+        "price_band": [
+          19.99,
+          19.99
+        ],
+        "est_monthly_units": 7000,
+        "badges": {}
+      }
+    ]
+  },
+  "reviews": {
+    "avg": 4.45,
+    "market_review_volume": 69338,
+    "negatives": [
+      "化冻",
+      "冷链断链"
+    ],
+    "positives": [
+      "刺身级口感",
+      "产地溯源可查",
+      "急冻锁鲜"
+    ],
+    "note": "Amazon US 已平台级封锁评论文本抓取（2026-10 实测 5 个 Actor 均 0 条）；负面词云来源=Stage 6 售后投诉闭环真实会话产出（负反馈回流）"
+  },
+  "ad_activity": [
+    {
+      "platform": "Amazon",
+      "signal": "Prime Big Deal / Best Seller 徽章",
+      "evidence": 4
+    }
+  ],
+  "supply_chain_signals": {
+    "origin_concentration": "Norway 60% / Chile 30% / Alaska 10%",
+    "cold_chain_tech": "-196℃液氮急冻 + 干冰冷链运输普及率上升",
+    "tariff_note": "进口关税波动，智利自贸协定零关税优势",
+    "source": "simulated（无公开数据源，待接入行业数据库）"
+  },
+  "source": {
+    "provider": "apify",
+    "actor": "igview-owner~amazon-search-scraper"
+  },
+  "mode": "live",
+  "signals_mode": "live (market signals)",
+  "reviews_text_mode": "blocked_on_amazon_us → aftersales_loop_feedback",
+  "negatives_source_path": "pipeline-run\\20261006-165427-46f127\\after_sales_report.json"
+}
