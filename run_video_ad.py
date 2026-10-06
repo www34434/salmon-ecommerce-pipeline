@@ -52,7 +52,7 @@ def clean_image_to_data_uri(image_path: str) -> str:
     return f"data:image/jpeg;base64,{b64}"
 
 
-def create_video_task(model: str, img_url: str):
+def create_video_task(model: str, img_url: str, duration: int = 5):
     r = requests.post(
         f"{BASE}/services/aigc/video-generation/video-synthesis",
         headers={
@@ -62,7 +62,7 @@ def create_video_task(model: str, img_url: str):
         },
         json={"model": model, "input": {"prompt": AD_PROMPT, "img_url": img_url},
               "parameters": {"prompt_extend": True, "resolution": "1080P",
-                             "duration": 5, "audio": False}},
+                             "duration": duration, "audio": False}},
         timeout=60,
     )
     return r
@@ -88,33 +88,43 @@ def poll_task(task_id: str, max_wait: int = 480):
 
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser(description="三文鱼广告环执行器 (Stage 5)")
+    ap.add_argument("--image", default=os.path.join(HERE, "image_set", "场景展示图.jpg"),
+                    help="参考图（默认场景展示图）")
+    ap.add_argument("--duration", type=int, default=5, choices=[5, 10, 15],
+                    help="视频时长秒数（默认 5）")
+    ap.add_argument("--out", default="", help="输出 mp4 文件名（默认按时长命名）")
+    args = ap.parse_args()
+
     if not API_KEY:
         print("DASHSCOPE_API_KEY 未设置")
         sys.exit(1)
 
-    # 选择参考图：默认场景展示图（最具商业感），可命令行覆盖
-    image = sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, "image_set", "场景展示图.jpg")
+    image = args.image
     if not os.path.exists(image):
         print(f"参考图不存在: {image}")
         sys.exit(1)
 
     out_dir = os.path.join(HERE, "ad_creatives")
     os.makedirs(out_dir, exist_ok=True)
+    out_name = args.out or (f"salmon_product_ad_{args.duration}s.mp4"
+                            if args.duration != 5 else "salmon_product_ad.mp4")
 
     # ── Phase B: 图生视频 ──
     img_url = clean_image_to_data_uri(image)
     video_url = None
     used_model = None
     for model in MODELS:
-        print(f"\n[video] 尝试模型: {model}")
-        r = create_video_task(model, img_url)
+        print(f"\n[video] 尝试模型: {model} duration={args.duration}s")
+        r = create_video_task(model, img_url, args.duration)
         body = r.json()
         if r.status_code != 200:
             print(f"[video] {model} 创建失败: {str(body)[:200]}")
             continue
         task_id = body["output"]["task_id"]
         print(f"[video] task_id={task_id}")
-        video_url = poll_task(task_id)
+        video_url = poll_task(task_id, max_wait=480 + args.duration * 40)
         if video_url:
             used_model = model
             break
@@ -125,7 +135,7 @@ def main():
         sys.exit(1)
 
     # ── 下载视频 ──
-    mp4 = os.path.join(out_dir, "salmon_product_ad.mp4")
+    mp4 = os.path.join(out_dir, out_name)
     print(f"\n[download] {video_url[:100]}...")
     with requests.get(video_url, stream=True, timeout=600) as resp:
         resp.raise_for_status()
@@ -147,7 +157,7 @@ def main():
             {
                 "type": "product_video_ad",
                 "path": mp4,
-                "duration_estimate": "5-10s",
+                "duration_estimate": f"{args.duration}s",
                 "platform": ["douyin", "shipinhao", "xiaohongshu"],
                 "source_image": image,
             },

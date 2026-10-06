@@ -1,18 +1,18 @@
 {
-  "reference_image": "image_set/场景展示图.jpg",
+  "reference_image": "d:\\Trae CN\\6skills\\salmon-ecommerce-pipeline\\image_set\\场景展示图.jpg",
   "recipe": "muapi-product-video-ad-maker (Phase A=Stage4套图, Phase B=wan i2v)",
   "model": "wan2.6-i2v-flash",
   "creatives": [
     {
       "type": "product_video_ad",
-      "path": "ad_creatives/salmon_product_ad.mp4",
-      "duration_estimate": "5-10s",
+      "path": "d:\\Trae CN\\6skills\\salmon-ecommerce-pipeline\\ad_creatives\\salmon_product_ad_10s.mp4",
+      "duration_estimate": "10s",
       "platform": [
         "douyin",
         "shipinhao",
         "xiaohongshu"
       ],
-      "source_image": "image_set/场景展示图.jpg"
+      "source_image": "d:\\Trae CN\\6skills\\salmon-ecommerce-pipeline\\image_set\\场景展示图.jpg"
     },
     {
       "type": "copy_main",
