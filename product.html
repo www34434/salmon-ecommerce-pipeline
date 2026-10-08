@@ -109,6 +109,59 @@
   /* 徽章 */
   .badge-fresh{background:var(--color-fresh);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
   .tag-origin{background:var(--color-deepsea);color:#fff;padding:4px 12px;border-radius:4px;font-size:12px;font-weight:500}
+
+  /* 购物车图标 + 徽章 */
+  .cart-icon-btn{position:relative;background:transparent;border:none;cursor:pointer;padding:8px;border-radius:8px;transition:all 150ms ease;display:flex;align-items:center;justify-content:center}
+  .cart-icon-btn:hover{background:rgba(28,25,23,0.05)}
+  .cart-badge{position:absolute;top:0;right:0;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--color-salmon);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;font-variant-numeric:tabular-nums;transform:scale(0);transition:transform 200ms ease}
+  .cart-badge.show{transform:scale(1)}
+  .cart-badge.bump{animation:cartBump 300ms ease}
+  @keyframes cartBump{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+
+  /* 购物车抽屉 */
+  .cart-overlay{position:fixed;inset:0;background:rgba(12,10,9,0.5);z-index:99;opacity:0;pointer-events:none;transition:opacity 250ms ease}
+  .cart-overlay.open{opacity:1;pointer-events:auto}
+  .cart-drawer{position:fixed;top:0;right:0;bottom:0;width:100%;max-width:420px;background:var(--color-card);z-index:100;transform:translateX(100%);transition:transform 300ms cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column;box-shadow:-20px 0 40px rgba(0,0,0,0.15)}
+  .cart-drawer.open{transform:translateX(0)}
+  .cart-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--color-border)}
+  .cart-header h3{font-family:'Cormorant',serif;font-size:22px;font-weight:700;color:var(--color-primary);margin:0}
+  .cart-close{background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;transition:all 150ms ease;display:flex;align-items:center;justify-content:center}
+  .cart-close:hover{background:var(--color-muted)}
+  .cart-items{flex:1;overflow-y:auto;padding:16px 24px}
+  .cart-item{display:flex;gap:12px;padding:16px 0;border-bottom:1px solid var(--color-muted)}
+  .cart-item-img{width:72px;height:72px;border-radius:8px;object-fit:cover;background:var(--color-muted);flex-shrink:0}
+  .cart-item-info{flex:1;min-width:0}
+  .cart-item-name{font-weight:600;color:var(--color-primary);font-size:14px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cart-item-specs{font-size:12px;color:var(--color-muted-foreground);margin-bottom:8px}
+  .cart-item-bottom{display:flex;align-items:center;justify-content:space-between}
+  .cart-item-price{font-weight:700;color:var(--color-salmon);font-size:15px;font-variant-numeric:tabular-nums}
+  .cart-item-remove{background:none;border:none;color:var(--color-muted-foreground);cursor:pointer;padding:4px;font-size:12px;transition:color 150ms ease}
+  .cart-item-remove:hover{color:var(--color-salmon)}
+  .cart-qty{display:flex;align-items:center;gap:8px}
+  .cart-qty-btn{width:28px;height:28px;border-radius:6px;border:1px solid var(--color-border);background:var(--color-card);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all 150ms ease}
+  .cart-qty-btn:hover{border-color:var(--color-primary)}
+  .cart-qty-val{min-width:24px;text-align:center;font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
+  .cart-footer{padding:20px 24px;border-top:1px solid var(--color-border);background:var(--color-card)}
+  .cart-subtotal{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}
+  .cart-subtotal-label{font-size:14px;color:var(--color-muted-foreground)}
+  .cart-subtotal-val{font-family:'Montserrat',sans-serif;font-weight:700;color:var(--color-primary);font-size:22px;font-variant-numeric:tabular-nums}
+  .cart-checkout-btn{width:100%;background:var(--btn-primary-bg);color:#fff;padding:16px;border-radius:8px;font-weight:700;font-size:16px;cursor:pointer;border:none;transition:all 200ms ease}
+  .cart-checkout-btn:hover{background:var(--btn-primary-hover)}
+  .cart-empty{text-align:center;padding:60px 24px;color:var(--color-muted-foreground)}
+  .cart-empty-icon{width:64px;height:64px;margin:0 auto 16px;color:var(--color-muted)}
+
+  /* Toast 通知 */
+  .toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--color-primary);color:#fff;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:500;z-index:200;opacity:0;pointer-events:none;transition:all 300ms cubic-bezier(0.4,0,0.2,1);box-shadow:var(--shadow-lg);display:flex;align-items:center;gap:8px}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* 购买成功弹窗 */
+  .modal-overlay{position:fixed;inset:0;background:rgba(12,10,9,0.6);z-index:150;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 250ms ease;padding:24px}
+  .modal-overlay.open{opacity:1;pointer-events:auto}
+  .modal{background:var(--color-card);border-radius:20px;padding:32px;max-width:400px;width:100%;text-align:center;transform:scale(0.9);transition:transform 250ms ease}
+  .modal-overlay.open .modal{transform:scale(1)}
+  .modal-icon{width:72px;height:72px;margin:0 auto 16px;border-radius:50%;background:rgba(5,150,105,0.1);display:flex;align-items:center;justify-content:center}
+  .modal-title{font-family:'Cormorant',serif;font-size:24px;font-weight:700;color:var(--color-primary);margin-bottom:8px}
+  .modal-desc{font-size:14px;color:var(--color-muted-foreground);margin-bottom:24px}
 </style>
 
 <!-- Tailwind CDN（增强）-->
@@ -141,10 +194,10 @@ tailwind.config = {theme:{extend:{colors:{'primitive-black':'#0C0A09','primitive
       <a href="index.html#origin" style="cursor:pointer">产地溯源</a>
       <a href="index.html#coldchain" style="cursor:pointer">冷链全程</a>
     </nav>
-    <a href="index.html#cta" style="display:inline-flex;align-items:center;gap:8px;background:var(--btn-primary-bg);color:#fff;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;border:none">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-      立即尝鲜
-    </a>
+    <button class="cart-icon-btn" onclick="toggleCart()" aria-label="购物车">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span class="cart-badge" id="cartBadge">0</span>
+    </button>
   </div>
 </header>
 
@@ -261,11 +314,11 @@ tailwind.config = {theme:{extend:{colors:{'primitive-black':'#0C0A09','primitive
 
       <!-- CTA -->
       <div style="display:flex;gap:12px;margin-top:8px">
-        <button class="btn-primary" style="flex:1;font-size:16px;padding:16px 32px;box-shadow:0 10px 20px rgba(194,65,12,0.3)">
-          立即购买 · <span class="tabular-nums">¥158</span>
+        <button class="btn-primary" id="btnBuyNow" style="flex:1;font-size:16px;padding:16px 32px;box-shadow:0 10px 20px rgba(194,65,12,0.3)">
+          立即购买 · <span class="tabular-nums" id="btnBuyNowPrice">¥158</span>
         </button>
-        <button class="btn-outline" style="flex:1">加入购物车</button>
-        <button style="width:56px;border:1px solid var(--color-border);border-radius:8px;background:var(--color-card);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 150ms ease" aria-label="收藏">
+        <button class="btn-outline" id="btnAddCart" style="flex:1">加入购物车</button>
+        <button style="width:56px;border:1px solid var(--color-border);border-radius:8px;background:var(--color-card);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 150ms ease" aria-label="收藏" id="btnFav" onclick="toggleFav(this)">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-salmon)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         </button>
       </div>
@@ -469,6 +522,43 @@ tailwind.config = {theme:{extend:{colors:{'primitive-black':'#0C0A09','primitive
 
 </main>
 
+<!-- ============ 购物车抽屉 + Overlay ============ -->
+<div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+<aside class="cart-drawer" id="cartDrawer" aria-label="购物车">
+  <div class="cart-header">
+    <h3>购物车 · <span id="cartCountLabel" class="tabular-nums">0</span> 件</h3>
+    <button class="cart-close" onclick="toggleCart()" aria-label="关闭">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-foreground)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="cart-footer" id="cartFooter" style="display:none">
+    <div class="cart-subtotal">
+      <span class="cart-subtotal-label">商品小计</span>
+      <span class="cart-subtotal-val tabular-nums" id="cartSubtotal">¥0</span>
+    </div>
+    <button class="cart-checkout-btn" onclick="checkout()">去结算</button>
+  </div>
+</aside>
+
+<!-- ============ Toast ============ -->
+<div class="toast" id="toast">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastMsg">已加入购物车</span>
+</div>
+
+<!-- ============ 购买成功弹窗 ============ -->
+<div class="modal-overlay" id="buyModal">
+  <div class="modal">
+    <div class="modal-icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="modal-title">下单成功！</div>
+    <div class="modal-desc" id="buyModalDesc">烟台冰鲜虹鳟刺身 400g 已锁定，冷链 48 小时内直达。</div>
+    <button class="btn-primary" style="width:100%" onclick="closeBuyModal()">好的，等待发货</button>
+  </div>
+</div>
+
 <footer style="background:var(--color-primary);color:rgba(255,255,255,0.5);text-align:center;padding:40px 24px;font-size:14px">
   <div style="max-width:1280px;margin:0 auto">
     <div style="font-family:'Cormorant',serif;font-size:20px;color:#fff;margin-bottom:8px">Salmon<span style="color:var(--color-salmon)">Fresh</span></div>
@@ -476,48 +566,265 @@ tailwind.config = {theme:{extend:{colors:{'primitive-black':'#0C0A09','primitive
   </div>
 </footer>
 
-<!-- IntersectionObserver -->
+<!-- ============ 购物车完整 JS ============ -->
 <script>
-  var io = new IntersectionObserver(function(entries) {
-    entries.forEach(function(entry) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        io.unobserve(entry.target);
-      }
+/* ===== 购物车核心：localStorage 持久化 ===== */
+var CART_KEY = 'salmon_cart_v1';
+var FAV_KEY = 'salmon_fav_v1';
+
+function loadCart() {
+  try { return JSON.parse(localStorage.getItem(CART_KEY)) || []; }
+  catch(e) { return []; }
+}
+function saveCart(cart) {
+  localStorage.setItem(CART_KEY, JSON.stringify(cart));
+}
+function loadFav() { return localStorage.getItem(FAV_KEY) === '1'; }
+function saveFav(v) { localStorage.setItem(FAV_KEY, v ? '1' : '0'); }
+
+/* ===== 当前商品状态 ===== */
+var currentProduct = {
+  id: 'yantai-trout-' + Date.now(),
+  name: '烟台冰鲜虹鳟刺身',
+  image: 'image_set/white_bg_v2.jpg',
+  origin: '烟台 · 黄海深海',
+  weight: '400g',
+  cutting: '刺身',
+  price: 158
+};
+
+/* ===== 规格选择（增强：同步更新 CTA + 当前商品）===== */
+function selectSpec(el, price, isCutting) {
+  var siblings = el.parentElement.querySelectorAll('.spec-option');
+  siblings.forEach(function(s){ s.classList.remove('selected'); });
+  el.classList.add('selected');
+  if (price) {
+    currentProduct.weight = el.querySelector('.tabular-nums') ? el.querySelector('.tabular-nums').textContent.replace('¥','') + 'g' : el.querySelector('div').textContent.replace(/[¥]/g,'') + 'g';
+    currentProduct.price = parseInt(price.replace('¥',''));
+    document.getElementById('btnBuyNowPrice').textContent = price;
+  } else if (isCutting) {
+    currentProduct.cutting = el.querySelector('div').textContent;
+  }
+}
+
+/* ===== 缩略图切换 ===== */
+function setMain(src, el) {
+  document.getElementById('mainImg').src = src;
+  document.querySelectorAll('.thumb').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+}
+
+/* ===== 数量选择 ===== */
+function changeQty(delta) {
+  var input = document.getElementById('qty');
+  var val = parseInt(input.value) || 1;
+  val = Math.max(1, Math.min(10, val + delta));
+  input.value = val;
+}
+
+/* ===== 加入购物车 ===== */
+function addToCart() {
+  var qty = parseInt(document.getElementById('qty').value) || 1;
+  var cart = loadCart();
+  var specKey = currentProduct.weight + '_' + currentProduct.cutting;
+  var existing = cart.find(function(i){ return i.specKey === specKey; });
+  if (existing) {
+    existing.qty += qty;
+  } else {
+    cart.push({
+      id: currentProduct.id,
+      specKey: specKey,
+      name: currentProduct.name,
+      image: currentProduct.image,
+      origin: currentProduct.origin,
+      weight: currentProduct.weight,
+      cutting: currentProduct.cutting,
+      price: currentProduct.price,
+      qty: qty
     });
-  }, { threshold: 0.1 });
-  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
-
-  // 缩略图切换主图
-  function setMain(src, el) {
-    document.getElementById('mainImg').src = src;
-    document.querySelectorAll('.thumb').forEach(function(t){ t.classList.remove('active'); });
-    el.classList.add('active');
   }
+  saveCart(cart);
+  updateCartBadge();
+  showToast('已加入购物车 · ' + qty + ' 件');
+}
 
-  // 规格选择
-  function selectSpec(el, price, isCutting) {
-    var siblings = el.parentElement.querySelectorAll('.spec-option');
-    siblings.forEach(function(s){ s.classList.remove('selected'); });
-    el.classList.add('selected');
-    if (price) {
-      var btn = document.querySelector('.btn-primary');
-      btn.innerHTML = btn.innerHTML.replace(/¥\d+/, '¥' + price.replace('¥',''));
-    }
-  }
+/* ===== 立即购买 ===== */
+function buyNow() {
+  addToCart();
+  openBuyModal();
+}
 
-  // 数量选择
-  function changeQty(delta) {
-    var input = document.getElementById('qty');
-    var val = parseInt(input.value) || 1;
-    val = Math.max(1, Math.min(10, val + delta));
-    input.value = val;
+/* ===== 购物车徽章 ===== */
+function updateCartBadge() {
+  var cart = loadCart();
+  var total = cart.reduce(function(s,i){ return s + i.qty; }, 0);
+  var badge = document.getElementById('cartBadge');
+  var label = document.getElementById('cartCountLabel');
+  badge.textContent = total;
+  label.textContent = total;
+  if (total > 0) {
+    badge.classList.add('show');
+    badge.classList.remove('bump');
+    void badge.offsetWidth;
+    badge.classList.add('bump');
+  } else {
+    badge.classList.remove('show');
   }
+}
 
-  // 尊重减少动效偏好
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('visible'); });
+/* ===== 购物车抽屉 ===== */
+function toggleCart() {
+  var overlay = document.getElementById('cartOverlay');
+  var drawer = document.getElementById('cartDrawer');
+  var isOpen = drawer.classList.contains('open');
+  if (isOpen) {
+    overlay.classList.remove('open');
+    drawer.classList.remove('open');
+  } else {
+    renderCart();
+    overlay.classList.add('open');
+    drawer.classList.add('open');
   }
+}
+
+function renderCart() {
+  var cart = loadCart();
+  var items = document.getElementById('cartItems');
+  var footer = document.getElementById('cartFooter');
+  if (cart.length === 0) {
+    items.innerHTML = '<div class="cart-empty"><div class="cart-empty-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg></div><div style="font-weight:600;color:var(--color-primary);margin-bottom:8px">购物车是空的</div><div style="font-size:13px">选好规格后点击「加入购物车」吧</div></div>';
+    footer.style.display = 'none';
+    return;
+  }
+  var html = cart.map(function(item, idx){
+    return '<div class="cart-item">' +
+      '<img class="cart-item-img" src="' + item.image + '" alt="' + item.name + '" loading="lazy">' +
+      '<div class="cart-item-info">' +
+        '<div class="cart-item-name">' + item.name + '</div>' +
+        '<div class="cart-item-specs">' + item.weight + ' · ' + item.cutting + ' · ' + item.origin + '</div>' +
+        '<div class="cart-item-bottom">' +
+          '<span class="cart-item-price">¥' + (item.price * item.qty) + '</span>' +
+          '<button class="cart-item-remove" onclick="removeFromCart(' + idx + ')">删除</button>' +
+        '</div>' +
+        '<div class="cart-qty" style="margin-top:10px">' +
+          '<button class="cart-qty-btn" onclick="changeCartQty(' + idx + ',-1)">−</button>' +
+          '<span class="cart-qty-val">' + item.qty + '</span>' +
+          '<button class="cart-qty-btn" onclick="changeCartQty(' + idx + ',1)">+</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+  items.innerHTML = html;
+  footer.style.display = 'block';
+  var subtotal = cart.reduce(function(s,i){ return s + i.price * i.qty; }, 0);
+  document.getElementById('cartSubtotal').textContent = '¥' + subtotal;
+}
+
+function removeFromCart(idx) {
+  var cart = loadCart();
+  cart.splice(idx, 1);
+  saveCart(cart);
+  renderCart();
+  updateCartBadge();
+  showToast('已删除');
+}
+
+function changeCartQty(idx, delta) {
+  var cart = loadCart();
+  cart[idx].qty += delta;
+  if (cart[idx].qty < 1) { removeFromCart(idx); return; }
+  saveCart(cart);
+  renderCart();
+  updateCartBadge();
+}
+
+/* ===== 结算（模拟）===== */
+function checkout() {
+  var cart = loadCart();
+  if (cart.length === 0) return;
+  var subtotal = cart.reduce(function(s,i){ return s + i.price * i.qty; }, 0);
+  document.getElementById('cartFooter').innerHTML = '<div style="text-align:center;padding:20px"><div style="font-size:14px;color:var(--color-muted-foreground);margin-bottom:12px">模拟结算（演示环境）</div><div class="cart-subtotal"><span class="cart-subtotal-label">应付金额</span><span class="cart-subtotal-val tabular-nums">¥' + subtotal + '</span></div><button class="btn-primary" style="width:100%;margin-top:12px" onclick="confirmCheckout()">确认支付 ¥' + subtotal + '</button></div>';
+}
+function confirmCheckout() {
+  saveCart([]);
+  closeCart();
+  updateCartBadge();
+  openBuyModal();
+}
+
+function closeCart() {
+  document.getElementById('cartOverlay').classList.remove('open');
+  document.getElementById('cartDrawer').classList.remove('open');
+}
+
+/* ===== Toast ===== */
+var toastTimer;
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 2000);
+}
+
+/* ===== 收藏 ===== */
+function toggleFav(btn) {
+  var fav = !loadFav();
+  saveFav(fav);
+  var svg = btn.querySelector('svg');
+  if (fav) {
+    svg.setAttribute('fill', 'var(--color-salmon)');
+    showToast('已收藏');
+  } else {
+    svg.setAttribute('fill', 'none');
+    showToast('已取消收藏');
+  }
+}
+
+/* ===== 购买成功弹窗 ===== */
+function openBuyModal() {
+  var qty = parseInt(document.getElementById('qty').value) || 1;
+  document.getElementById('buyModalDesc').textContent = currentProduct.name + ' ' + currentProduct.weight + ' × ' + qty + ' 已锁定，冷链 48 小时内直达。';
+  document.getElementById('buyModal').classList.add('open');
+  saveCart([]);
+  updateCartBadge();
+  closeCart();
+}
+function closeBuyModal() {
+  document.getElementById('buyModal').classList.remove('open');
+}
+
+/* ===== 事件绑定 ===== */
+document.getElementById('btnAddCart').addEventListener('click', addToCart);
+document.getElementById('btnBuyNow').addEventListener('click', buyNow);
+
+/* ===== 键盘 ESC 关闭 ===== */
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    if (document.getElementById('cartDrawer').classList.contains('open')) toggleCart();
+    if (document.getElementById('buyModal').classList.contains('open')) closeBuyModal();
+  }
+});
+
+/* ===== 初始化 ===== */
+updateCartBadge();
+// 恢复收藏状态
+if (loadFav()) {
+  var favBtn = document.getElementById('btnFav');
+  if (favBtn) favBtn.querySelector('svg').setAttribute('fill', 'var(--color-salmon)');
+}
+
+/* ===== IntersectionObserver ===== */
+var io = new IntersectionObserver(function(entries) {
+  entries.forEach(function(entry) {
+    if (entry.isIntersecting) { entry.target.classList.add('visible'); io.unobserve(entry.target); }
+  });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+
+if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('visible'); });
+}
 </script>
 
 </body>
