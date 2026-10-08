@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>サーモン鮮切 · 雨夜街角</title>
+<style>
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;background:#0b0e1a;touch-action:none}
+  #c{display:block;width:100%;height:100%}
+  #load{position:fixed;inset:0;background:#0b0e1a;z-index:9;transition:opacity 1s;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="load"></div>
+<script src="libs/three.min.js"></script>
+<script src="libs/OrbitControls.js"></script>
+<script>
+/* ============================================================
+   三文鱼鲜切店 · 雨夜街角 微缩模型（三渲二 / 日式二次元夜景）
+   无 UI · 自由拖拽旋转缩放 · 正方形底座
+   ============================================================ */
+var canvas = document.getElementById('c');
+var renderer = new THREE.WebGLRenderer({canvas:canvas, antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0e1a);
+scene.fog = new THREE.Fog(0x0b0e1a, 20, 42);
+
+var camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight, 0.1, 120);
+camera.position.set(8.8, 6.8, 10.2);
+
+var controls = new THREE.OrbitControls(camera, canvas);
+controls.target.set(0, 1.35, 0);
+controls.enableDamping = true; controls.dampingFactor = 0.06;
+controls.enablePan = false;
+controls.minDistance = 4.5; controls.maxDistance = 24;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.autoRotate = true; controls.autoRotateSpeed = 0.65;
+var idleTimer = null;
+controls.addEventListener('start', function(){ controls.autoRotate = false; clearTimeout(idleTimer); });
+controls.addEventListener('end', function(){ idleTimer = setTimeout(function(){ controls.autoRotate = true; }, 4000); });
+
+/* ---------- 三渲二：卡通色阶 + 描边 ---------- */
+var gradData = new Uint8Array([95, 150, 215, 255]);
+var gradientMap = new THREE.DataTexture(gradData, 4, 1, THREE.LuminanceFormat);
+gradientMap.minFilter = gradientMap.magFilter = THREE.NearestFilter;
+gradientMap.needsUpdate = true;
+
+function M(color, opt){ // toon 材质
+  var o = opt || {}; o.color = color; o.gradientMap = gradientMap;
+  return new THREE.MeshToonMaterial(o);
+}
+function GLOW(color, opt){ // 自发光（灯箱/霓虹/屏幕）
+  return new THREE.MeshBasicMaterial(Object.assign({color:color}, opt||{}));
+}
+function addEdges(mesh, op, th){
+  var e = new THREE.LineSegments(
+    new THREE.EdgesGeometry(mesh.geometry, th||28),
+    new THREE.LineBasicMaterial({color:0x0a0c18, transparent:true, opacity:(op===undefined?0.30:op)})
+  );
+  mesh.add(e); return mesh;
+}
+function shadowPad(x, z, r, op){ // 假阴影（夜景不开实时阴影，垫半透明圆片）
+  var p = new THREE.Mesh(new THREE.CircleGeometry(r, 20),
+    new THREE.MeshBasicMaterial({color:0x05060d, transparent:true, opacity:(op||0.4), depthWrite:false}));
+  p.rotation.x = -Math.PI/2; p.position.set(x, 0.012, z); scene.add(p); return p;
+}
+function B(w,h,d,mat,x,y,z,edge){ // box 快捷
+  var m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), mat);
+  m.position.set(x,y,z); scene.add(m);
+  if(edge!==false) addEdges(m);
+  return m;
+}
+function C(rt,rb,h,seg,mat,x,y,z,edge){ // cylinder 快捷
+  var m = new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg), mat);
+  m.position.set(x,y,z); scene.add(m);
+  if(edge) addEdges(m, edge);
+  return m;
+}
+
+/* ---------- 文字贴图（店招 / 海报 / 路牌）---------- */
+function textTex(w, h, draw){
+  var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  var ctx = cv.getContext('2d'); draw(ctx, w, h);
+  var t = new THREE.CanvasTexture(cv); t.anisotropy = 4; return t;
+}
+
+/* ============================================================
+   ① 底座与地面
+   ============================================================ */
+B(10, 0.5, 10, M(0x232842), 0, -0.25, 0, 0.5);                    // 底座体
+var baseTop = new THREE.Mesh(new THREE.BoxGeometry(10.04,0.06,10.04), M(0x2c3352));
+baseTop.position.y = 0.03; scene.add(baseTop);
+var ground = new THREE.Mesh(new THREE.PlaneGeometry(10,10),
+  new THREE.MeshPhongMaterial({color:0x3a4160, shininess:110, specular:0x93a6dd})); // 湿柏油高反光
+ground.rotation.x = -Math.PI/2; ground.position.y = 0.065; scene.add(ground);
+
+/* 人行道区（浅灰石板）*/
+var walk = new THREE.Mesh(new THREE.BoxGeometry(10,0.05,1.5), M(0x6b7089));
+walk.position.set(0,0.085,-0.1); scene.add(walk); addEdges(walk,0.2);
+
+/* 车行道与转弯路缘 */
+var roadLine = new THREE.Mesh(new THREE.BoxGeometry(10,0.02,0.06), M(0xd9dce8,{emissive:0x22263a}));
+roadLine.position.set(0,0.072,0.66); scene.add(roadLine);
+var curb = B(0.12,0.1,5.2, M(0x565d7c), 4.94,0.1,2.9, 0.25); // 右转角路缘
+var curb2 = B(5.2,0.1,0.12, M(0x565d7c), 2.2,0.1,0.72, 0.25);    // 前路缘
+
+/* 反光斑马线（过街）*/
+for(var i=0;i<6;i++){
+  var zeb = new THREE.Mesh(new THREE.BoxGeometry(0.55,0.015,0.16),
+    new THREE.MeshPhongMaterial({color:0xdde3f2, shininess:160, specular:0xffffff}));
+  zeb.position.set(-3.2+i*1.06, 0.078, 2.1); scene.add(zeb);
+}
+/* 停车位划线（右侧）*/
+B(0.05,0.012,1.6, GLOW(0xcfd6ea,{transparent:true,opacity:0.75}), 2.6,0.075,3.6, false);
+B(0.05,0.012,1.6, GLOW(0xcfd6ea,{transparent:true,opacity:0.75}), 4.1,0.075,3.6, false);
+/* 排水沟（人行道外缘细槽）*/
+B(9.6,0.02,0.14, M(0x1c2033), 0,0.075,0.62, false);
+
+/* 积水水洼（雨夜反光）*/
+[[1.6,1.4,0.85],[-2.2,2.6,0.7],[3.3,1.1,0.55],[-1.2,0.3,0.5],[0.6,3.4,0.65]].forEach(function(p,i){
+  var pud = new THREE.Mesh(new THREE.CircleGeometry(p[2], 22),
+    new THREE.MeshPhongMaterial({color:0x131a30, shininess:200, specular:0xbfd2ff, transparent:true, opacity:0.92}));
+  pud.rotation.x = -Math.PI/2; pud.position.set(p[0], 0.072+i*0.002, p[1]);
+  pud.scale.x = 1.35; scene.add(pud);
+});
+
+/* ============================================================
+   ② 三文鱼鲜切店（视觉中心）
+   ============================================================ */
+var WALL = M(0xe9dfcd), WALL2 = M(0xdcd2be);
+/* 墙体（左/右/后）*/
+B(0.16,3,4, WALL, -2.52,1.5,-2.8);
+B(0.16,3,4, WALL,  2.52,1.5,-2.8);
+B(5.2,3,0.16, WALL2, 0,1.5,-4.72);
+/* 店顶 + 屋檐 */
+B(5.7,0.22,4.5, M(0x3d4257), 0,3.1,-2.8);
+B(5.9,0.1,0.5, M(0x2e3346), 0,3.02,-0.72); // 前檐
+/* 正面：墙裙 + 楣 + 大玻璃窗 */
+B(5.2,0.5,0.14, WALL, 0,0.25,-0.78);
+B(5.2,0.55,0.14, WALL, 0,2.72,-0.78);
+var GLASS = new THREE.MeshPhongMaterial({color:0xa8d8ff, transparent:true, opacity:0.14, shininess:180, specular:0xffffff});
+var glassF = new THREE.Mesh(new THREE.BoxGeometry(5.0,2.1,0.05), GLASS);
+glassF.position.set(0,1.55,-0.76); scene.add(glassF); addEdges(glassF,0.4);
+var glassR = new THREE.Mesh(new THREE.BoxGeometry(0.05,1.9,2.6), GLASS.clone());
+glassR.material.opacity = 0.18; glassR.position.set(2.55,1.5,-1.9); scene.add(glassR); addEdges(glassR,0.4);
+/* 玻璃竖框 */
+[-1.7,0,1.7].forEach(function(x){ B(0.07,2.15,0.09, M(0x8a8272), x,1.55,-0.74, false); });
+/* 自动门（右侧开合缝 + 门轨）*/
+B(1.1,2.05,0.06, GLASS.clone(), 1.05,1.27,-0.74, false).material.opacity = 0.22;
+B(1.18,0.08,0.12, M(0x8a8272), 1.05,2.32,-0.74, false);
+/* 门口地垫 */
+var mat2 = new THREE.Mesh(new THREE.BoxGeometry(1.5,0.03,0.75), M(0x2f6b52));
+mat2.position.set(1.05,0.105,-0.35); scene.add(mat2); addEdges(mat2,0.3);
+
+/* 条纹雨棚（品红白）*/
+for(var i2=0;i2<9;i2++){
+  var st = new THREE.Mesh(new THREE.BoxGeometry(0.62,0.07,1.05), M(i2%2?0xf3efe4:0xd63d6d));
+  st.position.set(-2.48+i2*0.62, 2.38, -0.22); st.rotation.x = 0.16; scene.add(st);
+  if(i2%2) addEdges(st,0.22);
+}
+
+/* 店招横匾（霓虹）*/
+var signCv = textTex(1024, 160, function(ctx,w,h){
+  ctx.fillStyle = '#141826'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle = '#ff4d7d'; ctx.lineWidth = 10; ctx.strokeRect(8,8,w-16,h-16);
+  ctx.fillStyle = '#ffd9e5'; ctx.font = 'bold 92px "Yu Gothic","Hiragino Sans","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.shadowColor = '#ff4d7d'; ctx.shadowBlur = 26;
+  ctx.fillText('サーモン鮮切', w/2-60, h/2+6);
+  ctx.shadowBlur = 0; ctx.fillStyle = '#8be9ff'; ctx.font = 'bold 40px Arial';
+  ctx.fillText('SALMON', w-150, h/2);
+});
+var sign = new THREE.Mesh(new THREE.BoxGeometry(3.9,0.6,0.1),
+  [M(0x1a1f30),M(0x1a1f30),M(0x1a1f30),M(0x1a1f30),
+   new THREE.MeshBasicMaterial({map:signCv}), M(0x1a1f30)]);
+sign.position.set(-0.25,3.02,-0.62); scene.add(sign); addEdges(sign,0.45);
+B(0.05,0.42,0.05, GLOW(0x8be9ff), -2.25,2.72,-0.6, false); // 霓虹立管
+var neonBar = B(3.95,0.05,0.05, GLOW(0xff4d7d), -0.25,3.36,-0.6, false); // 顶部霓虹管
+
+/* ============================================================
+   ③ 店内（透过大玻璃可见 · 明亮温暖）
+   ============================================================ */
+/* 店内地板 + 天花 */
+var floor = new THREE.Mesh(new THREE.BoxGeometry(5,0.04,3.8), M(0xd8cdb4));
+floor.position.set(0,0.1,-2.85); scene.add(floor);
+var ceil = new THREE.Mesh(new THREE.BoxGeometry(5,0.06,3.8), M(0xcfc6b0));
+ceil.position.set(0,2.92,-2.85); scene.add(ceil);
+/* 天花灯箱 ×3 */
+[-1.5,0,1.5].forEach(function(x){
+  var lp = new THREE.Mesh(new THREE.BoxGeometry(1.15,0.05,0.55), GLOW(0xfff3d2));
+  lp.position.set(x,2.86,-2.7); scene.add(lp);
+});
+/* 冰鲜展示柜（左侧 · 三文鱼排一列）*/
+var caseB = B(2.3,0.85,0.85, M(0xf4f0e6), -1.25,0.55,-4.1);
+B(2.3,0.1,0.85, M(0xd9e6ee), -1.25,1.02,-4.1, false);
+var caseGlass = new THREE.Mesh(new THREE.BoxGeometry(2.2,0.55,0.75), GLASS.clone());
+caseGlass.material.opacity = 0.2; caseGlass.position.set(-1.25,1.35,-4.1); scene.add(caseGlass);
+for(var f=0;f<7;f++){ // 柜中三文鱼柳
+  var fil = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.1,0.5), M(0xff7a4a));
+  fil.position.set(-2.2+f*0.32, 1.16, -4.1); fil.rotation.y = 0.06*(f%3-1); scene.add(fil);
+  var stripe = new THREE.Mesh(new THREE.BoxGeometry(0.23,0.03,0.1), M(0xffd9c2));
+  stripe.position.set(-2.2+f*0.32, 1.22, -4.1); scene.add(stripe);
+}
+/* 鲜切中岛台（刀位 + 大鱼柳）*/
+B(1.7,0.92,0.8, M(0xe8e2d2), 0.15,0.56,-3.0);
+B(1.78,0.07,0.88, M(0xfaf7ee), 0.15,1.05,-3.0, false);
+var bigFish = new THREE.Mesh(new THREE.BoxGeometry(0.6,0.14,0.34), M(0xff7a4a));
+bigFish.position.set(-0.1,1.16,-3.0); bigFish.rotation.y = 0.5; scene.add(bigFish);
+var knife = new THREE.Mesh(new THREE.BoxGeometry(0.34,0.02,0.05), M(0xb8c4d6));
+knife.position.set(0.55,1.11,-2.95); knife.rotation.y = -0.4; scene.add(knife);
+/* 收银台（右）*/
+B(1.25,0.9,0.62, M(0xded6c2), 1.75,0.55,-3.35);
+B(0.34,0.26,0.2, M(0x39405a), 1.85,1.13,-3.35); // 收银机
+B(0.2,0.14,0.03, GLOW(0x9fe8c8), 1.85,1.2,-3.24, false); // 屏幕微光
+/* 后墙货架（饭团/零食陈列）*/
+[-1.6,0.2].forEach(function(x,si){
+  B(1.7,1.7,0.36, M(0xefe9da), x,0.95,-4.4);
+  for(var r=0;r<3;r++) B(1.7,0.04,0.42, M(0xcfc6ae), x,0.55+r*0.5,-4.38, false);
+  var cols = 6, palette = [0xffb35e,0x9fe8c8,0xff8fa3,0xa8d8ff,0xffe28a,0xd0b3ff];
+  for(var r2=0;r2<3;r2++) for(var c2=0;c2<cols;c2++){
+    var good = new THREE.Mesh(new THREE.BoxGeometry(0.14,0.18,0.14),
+      M(palette[(si*7+r2*6+c2)%6]));
+    good.position.set(x-0.7+c2*0.28, 0.74+r2*0.5, -4.38); scene.add(good);
+  }
+});
+/* 三文鱼鱼缸（右前 · 青光水体）*/
+var tank = new THREE.Mesh(new THREE.BoxGeometry(0.72,0.78,0.5), GLASS.clone());
+tank.material.opacity = 0.25; tank.position.set(2.1,1.35,-1.35); scene.add(tank); addEdges(tank,0.4);
+B(0.78,0.1,0.56, M(0x8a8272), 2.1,0.94,-1.35, false);
+var water = new THREE.Mesh(new THREE.BoxGeometry(0.66,0.6,0.44),
+  new THREE.MeshBasicMaterial({color:0x3fd4c0, transparent:true, opacity:0.3}));
+water.position.set(2.1,1.38,-1.35); scene.add(water);
+var koi = new THREE.Mesh(new THREE.SphereGeometry(0.09,10,8), M(0xff7a4a));
+koi.scale.set(1.5,0.9,0.8); koi.position.set(2.02,1.3,-1.32); scene.add(koi);
+/* 杂志架（左前）*/
+B(0.5,0.9,0.36, M(0xefe9da), -2.2,0.55,-1.35);
+for(var mg=0;mg<4;mg++){
+  var mag = new THREE.Mesh(new THREE.BoxGeometry(0.03,0.34,0.26),
+    M([0xff8fa3,0x8be9ff,0xffe28a,0x9fe8c8][mg]));
+  mag.position.set(-2.02, 0.42+mg*0.05, -1.42+mg*0.16); mag.rotation.y = 0.5; scene.add(mag);
+}
+/* 店内海报 ×2 + 灯箱 */
+var poster = textTex(256, 340, function(ctx,w,h){
+  ctx.fillStyle='#fff6e8'; ctx.fillRect(0,0,w,h);
+  ctx.fillStyle='#ff7a4a'; ctx.beginPath(); ctx.ellipse(w/2,120,86,58,0,0,7); ctx.fill();
+  ctx.fillStyle='#c2410c'; ctx.font='bold 34px "Microsoft YaHei",sans-serif'; ctx.textAlign='center';
+  ctx.fillText('本日入荷', w/2, 232);
+  ctx.fillStyle='#333'; ctx.font='24px sans-serif'; ctx.fillText('ノルウェー直送', w/2, 272);
+  ctx.fillStyle='#ff4d7d'; ctx.font='bold 26px sans-serif'; ctx.fillText('サーモン祭り', w/2, 310);
+});
+[[0.4,-0.83,-4.62,0],[2.44,-1.4,-2.9,Math.PI/2]].forEach(function(pp){
+  var po = new THREE.Mesh(new THREE.PlaneGeometry(0.55,0.72), new THREE.MeshBasicMaterial({map:poster}));
+  po.position.set(pp[1],1.85,pp[2]); po.rotation.y = pp[3]; scene.add(po);
+  B(pp[3]?0.06:0.62, pp[3]?0.8:0.06, pp[3]?0.62:0.06, M(0x8a8272), pp[1],1.85,pp[2], false);
+});
+var lightbox = new THREE.Mesh(new THREE.BoxGeometry(0.8,0.5,0.06), GLOW(0xffe9b8));
+lightbox.position.set(-0.9,2.1,-4.6); scene.add(lightbox);
+/* 地面导视箭头 */
+[[-0.9,-2.2,0],[0.5,-1.5,0.5]].forEach(function(a){
+  var ar = new THREE.Mesh(new THREE.PlaneGeometry(0.3,0.16),
+    new THREE.MeshBasicMaterial({color:0x3fd4c0, transparent:true, opacity:0.65}));
+  ar.rotation.x = -Math.PI/2; ar.rotation.z = a[2]*Math.PI; ar.position.set(a[0],0.125,a[1]); scene.add(ar);
+});
+/* 后场门 */
+B(0.8,1.9,0.08, M(0x9b8f78), -2.35,1.05,-4.6);
+B(0.06,0.06,0.06, M(0x39405a), -2.05,1.05,-4.55, false);
+
+/* ============================================================
+   ④ 街角元素
+   ============================================================ */
+/* 自动贩卖机（右侧 · 白青发光面板）*/
+B(0.95,1.75,0.7, M(0xd63d6d), 3.55,0.94,-2.6);
+var vmPanel = new THREE.Mesh(new THREE.BoxGeometry(0.66,1.05,0.03), GLOW(0xcfeaff));
+vmPanel.position.set(3.42,1.22,-2.6); scene.add(vmPanel);
+B(0.7,0.28,0.03, M(0x2a2f45), 3.42,0.5,-2.6, false); // 取物口
+var vmLight = new THREE.PointLight(0xbfe8ff, 0.85, 4.2); vmLight.position.set(3.3,1.35,-2.3); scene.add(vmLight);
+
+/* 自行车（停车位）*/
+(function(){
+  var g = new THREE.Group(); g.position.set(3.35,0.1,3.6); g.rotation.y = 0.12;
+  var tire = M(0x2a2f45);
+  [[-0.42,0.28],[0.42,0.28]].forEach(function(p){
+    var wheel = new THREE.Mesh(new THREE.TorusGeometry(p[1],0.035,8,20), tire);
+    wheel.position.set(p[0],p[1],0); g.add(wheel);
+  });
+  [[-0.42,0.28],[0.42,0.28]].forEach(function(p){
+    var hub = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,0.06,10), M(0x9aa3c0));
+    hub.rotation.x = Math.PI/2; hub.position.set(p[0],p[1],0); g.add(hub);
+  });
+  [[[-0.42,0.28,0.42,1.0]],[[0.42,0.28,-0.3,0.95]]].forEach(function(s){
+    var bar = new THREE.Mesh(new THREE.CylinderGeometry(0.025,0.025,0.85,8), M(0xd63d6d));
+    bar.position.set((s[0][0]+s[0][2])/2,(s[0][1]+s[0][3])/2,0);
+    bar.rotation.z = Math.atan2(s[0][3]-s[0][1], s[0][2]-s[0][0]) + Math.PI/2;
+    g.add(bar);
+  });
+  var seat = new THREE.Mesh(new THREE.BoxGeometry(0.22,0.05,0.1), M(0x2a2f45));
+  seat.position.set(0.05,1.02,0); g.add(seat);
+  var handle = new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.02,0.4,8), M(0x2a2f45));
+  handle.rotation.z = Math.PI/2; handle.position.set(0.42,0.98,0); g.add(handle);
+  var basket = new THREE.Mesh(new THREE.BoxGeometry(0.26,0.18,0.22), M(0x8a8272));
+  basket.position.set(0.5,0.82,0); g.add(basket);
+  scene.add(g); shadowPad(3.35,3.6,0.75,0.35);
+})();
+
+/* 雨伞架（门口）*/
+C(0.17,0.2,0.48,10, M(0x39405a), 0.1,0.35,-0.35);
+[0xff4d7d,0x8be9ff,0xffe28a].forEach(function(cc,i){
+  var um = new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.03,0.85,6), M(cc));
+  um.position.set(0.1+(i-1)*0.09, 0.75, -0.35); um.rotation.z = (i-1)*0.22; scene.add(um);
+});
+/* 垃圾桶 */
+C(0.24,0.2,0.66,12, M(0x4a526e), -3.0,0.44,0.25); addEdges(scene.children[scene.children.length-1],0.3);
+C(0.26,0.26,0.07,12, M(0x39405a), -3.0,0.8,0.25);
+/* 路灯（暖白）*/
+C(0.05,0.08,3.5,10, M(0x39405a), -3.6,1.85,0.15);
+var lampArm = B(0.7,0.06,0.06, M(0x39405a), -3.25,3.6,0.15, false);
+var lampHead = new THREE.Mesh(new THREE.SphereGeometry(0.16,12,10), GLOW(0xffe8b8));
+lampHead.position.set(-2.95,3.52,0.15); scene.add(lampHead);
+var lampLight = new THREE.PointLight(0xffe2b0, 0.95, 5.5); lampLight.position.set(-2.9,3.4,0.15); scene.add(lampLight);
+
+/* 电线杆 ×2 + 电线（下垂弧）*/
+function pole(x,z,rot){
+  C(0.09,0.12,4.8,10, M(0x8d8a80), x,2.5,z);
+  B(1.3,0.09,0.09, M(0x6e6a60), x,4.55,z, false);
+  B(0.9,0.08,0.08, M(0x6e6a60), x,4.25,z, false);
+  C(0.16,0.16,0.5,10, M(0x5d5a52), x+0.3,4.0,z); // 变压器
+  shadowPad(x,z,0.4,0.35);
+}
+pole(-4.2,1.6,0); pole(4.35,-3.6,0);
+function wire(a,b,sag){
+  var curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(a[0],a[1],a[2]),
+    new THREE.Vector3((a[0]+b[0])/2,(a[1]+b[1])/2-sag,(a[2]+b[2])/2),
+    new THREE.Vector3(b[0],b[1],b[2])
+  ]);
+  var tube = new THREE.Mesh(new THREE.TubeGeometry(curve,16,0.014,6), M(0x14161f));
+  scene.add(tube);
+}
+wire([-4.2,4.5,1.6],[4.35,4.5,-3.6],0.55);
+wire([-4.2,4.2,1.6],[4.35,4.2,-3.6],0.6);
+wire([-4.2,4.5,1.6],[-6.5,4.6,3.2],0.35);   // 出画延伸
+wire([4.35,4.5,-3.6],[6.6,4.4,-5.2],0.35);
+/* 灯串（电线杆→店檐 3 只小灯笼）*/
+wire([-4.2,3.6,1.6],[-2.5,2.85,-0.4],0.18);
+[[-3.6,3.28,1.0],[-3.0,3.02,0.3]].forEach(function(p){
+  var lan = new THREE.Mesh(new THREE.SphereGeometry(0.09,10,8), GLOW(0xffb35e));
+  lan.position.set(p[0],p[1],p[2]); scene.add(lan);
+  var str = new THREE.Mesh(new THREE.CylinderGeometry(0.008,0.008,0.14,4), M(0x14161f));
+  str.position.set(p[0],p[1]+0.12,p[2]); scene.add(str);
+});
+
+/* 路牌（蓝底）*/
+C(0.035,0.035,2.4,8, M(0x6e6a60), 3.8,1.3,1.3);
+var roadSign = new THREE.Mesh(new THREE.BoxGeometry(0.66,0.3,0.04),
+  new THREE.MeshBasicMaterial({map:textTex(256,120,function(ctx,w,h){
+    ctx.fillStyle='#1e5bd6'; ctx.fillRect(0,0,w,h);
+    ctx.fillStyle='#fff'; ctx.font='bold 44px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('鮭町 3丁目', w/2, h/2);
+  })}));
+roadSign.position.set(3.8,2.35,1.3); scene.add(roadSign); addEdges(roadSign,0.4);
+/* 街角护栏（右前转角）*/
+for(var gl=0;gl<5;gl++){
+  C(0.03,0.03,0.72,8, M(0x9aa3c0), 2.15+gl*0.62,0.42,4.35);
+}
+B(3.1,0.05,0.05, M(0x9aa3c0), 3.39,0.76,4.35, false);
+B(3.1,0.05,0.05, M(0x9aa3c0), 3.39,0.5,4.35, false);
+B(0.05,0.05,1.3, M(0x9aa3c0), 4.6,0.76,3.85, false); // 转角段
+
+/* 小巷（店左侧）+ 暗楼 + 空调外机 */
+B(1.7,2.5,1.0, M(0x353b52), -4.05,1.35,-2.6);
+for(var wi=0;wi<4;wi++){ // 稀疏亮窗
+  var win = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.36,0.03), GLOW(wi%2?0xffd98a:0x242a40));
+  win.position.set(-4.35+(wi%2)*0.62, 1.0+Math.floor(wi/2)*0.8, -2.09); scene.add(win);
+}
+var ac = B(0.52,0.42,0.32, M(0xb8bcc9), -4.05,2.15,-2.0); // 空调外机
+B(0.5,0.03,0.3, M(0x6e7284), -4.05,2.37,-2.0, false);
+C(0.05,0.05,0.24,8, M(0x39405a), -4.05,1.86,-2.0); // 支架
+var acFan = new THREE.Mesh(new THREE.CircleGeometry(0.14,14), M(0x39405a));
+acFan.position.set(-3.78,2.15,-2.0); acFan.rotation.y = Math.PI/2; scene.add(acFan);
+var acDrip = new THREE.Mesh(new THREE.BoxGeometry(0.03,0.9,0.03), M(0x8d9ab8)); // 滴水管
+acDrip.position.set(-3.78,1.6,-1.86); scene.add(acDrip);
+
+/* 对面建筑群（前侧轮廓 · 卷帘门 + 公告栏）*/
+B(2.6,2.3,1.1, M(0x3b4160), -2.6,1.25,4.45);
+B(2.2,3.0,1.1, M(0x333950), 0.4,1.6,4.45);
+B(2.4,1.9,1.1, M(0x3f4566), 3.2,1.05,4.45);
+[[0.4,1.6,2.2],[3.2,1.05,2.4]].forEach(function(b,bi){
+  for(var r=0;r<3;r++) for(var c3=0;c3<4;c3++){
+    var w2 = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.34,0.03),
+      GLOW(((r*4+c3)*7+bi*3)%5 ? 0x1d2338 : 0xffd98a));
+    w2.position.set(b[0]-b[2]/2+0.45+c3*0.5, b[1]+0.4+r*0.62, 3.88); scene.add(w2);
+  }
+});
+/* 公告栏（发光海报）*/
+var board = new THREE.Mesh(new THREE.BoxGeometry(1.15,0.85,0.07), M(0x6e6a60));
+board.position.set(-1.7,1.25,3.87); scene.add(board); addEdges(board,0.4);
+[0xffe9b8,0x9fe8ff].forEach(function(cc,i){
+  var bp = new THREE.Mesh(new THREE.PlaneGeometry(0.44,0.6), GLOW(cc,{transparent:true,opacity:0.9}));
+  bp.position.set(-1.92+i*0.44,1.25,3.83); scene.add(bp);
+});
+/* 排水沟沿（对面人行道）*/
+B(9.8,0.03,0.1, M(0x1c2033), 0,0.075,3.82, false);
+
+/* ============================================================
+   ⑤ 灯光
+   ============================================================ */
+scene.add(new THREE.AmbientLight(0x25305a, 1.0));
+scene.add(new THREE.HemisphereLight(0x1c2650, 0x0d0a18, 0.75));
+var moon = new THREE.DirectionalLight(0x7d8fc9, 0.4);
+moon.position.set(-7,11,5); scene.add(moon);
+var shopLight1 = new THREE.PointLight(0xffb45e, 1.7, 10); shopLight1.position.set(0,2.4,-2.9); scene.add(shopLight1);
+var shopLight2 = new THREE.PointLight(0xffd9a0, 1.15, 7);  shopLight2.position.set(-1.2,1.9,-1.7); scene.add(shopLight2);
+var neonLight = new THREE.PointLight(0xff4d7d, 1.1, 5.5);  neonLight.position.set(-0.3,3.0,-0.4); scene.add(neonLight);
+
+/* ============================================================
+   ⑥ 雨（LineSegments 短竖线 · 日式动画雨感）
+   ============================================================ */
+var RAIN_N = 420;
+var rainPos = new Float32Array(RAIN_N*6);
+var rainSpd = new Float32Array(RAIN_N);
+for(var ri=0;ri<RAIN_N;ri++){
+  var rx = (Math.random()-0.5)*11, ry = Math.random()*9, rz = (Math.random()-0.5)*11;
+  rainPos.set([rx,ry,rz, rx,ry-0.32,rz], ri*6);
+  rainSpd[ri] = 0.10 + Math.random()*0.09;
+}
+var rainGeo = new THREE.BufferGeometry();
+rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+var rain = new THREE.LineSegments(rainGeo,
+  new THREE.LineBasicMaterial({color:0x9db4e8, transparent:true, opacity:0.32}));
+scene.add(rain);
+
+/* ============================================================
+   ⑦ 动画循环
+   ============================================================ */
+var clock = new THREE.Clock();
+function tick(){
+  requestAnimationFrame(tick);
+  var t = clock.getElapsedTime();
+  /* 雨 */
+  var arr = rainGeo.attributes.position.array;
+  for(var i=0;i<RAIN_N;i++){
+    var dy = rainSpd[i];
+    arr[i*6+1] -= dy; arr[i*6+4] -= dy;
+    if(arr[i*6+4] < 0.05){
+      var ny = 7.5 + Math.random()*2;
+      arr[i*6+1] = ny; arr[i*6+4] = ny-0.32;
+    }
+  }
+  rainGeo.attributes.position.needsUpdate = true;
+  /* 霓虹呼吸闪烁 */
+  neonLight.intensity = 1.05 + Math.sin(t*2.4)*0.14 + (Math.random()<0.012 ? -0.7 : 0);
+  neonBar.material.color.setHex(Math.random()<0.012 ? 0x88243f : 0xff4d7d);
+  vmPanel.material.color.setHex(Math.random()<0.008 ? 0x8fb6cf : 0xcfeaff);
+  /* 鱼游动 */
+  koi.position.x = 2.02 + Math.sin(t*1.3)*0.14;
+  koi.position.z = -1.32 + Math.cos(t*0.9)*0.07;
+  koi.rotation.y = -t*1.3;
+  controls.update();
+  renderer.render(scene, camera);
+}
+tick();
+
+/* 加载淡出 */
+window.addEventListener('load', function(){
+  var l = document.getElementById('load');
+  setTimeout(function(){ l.style.opacity = 0; setTimeout(function(){ l.remove(); }, 1000); }, 250);
+});
+/* 自适应 */
+window.addEventListener('resize', function(){
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
