@@ -8,11 +8,61 @@
 
 <!-- ========== 微信兼容：内联关键样式 + Tailwind CDN 增强 ========== -->
 <style>
-  /* --- 关键样式内联（微信 WebView 对外部 CDN 偶发拦截） --- */
+  /* ========== 三层色 Token（设计系统 yantai-rainbow-trout MASTER.md） ========== */
+  /* Layer 1 — Primitive（不可变原子色）*/
   :root{
-    --primary:#1C1917; --accent:#A16207; --bg:#FAFAF9; --fg:#0C0A09;
-    --salmon:#C2410C; --deepsea:#0E1223; --fresh:#059669; --muted:#E8ECF0;
-    --mutedfg:#475569; --border:#D6D3D1;
+    --primitive-black:#0C0A09;
+    --primitive-charcoal:#1C1917;
+    --primitive-stone:#44403C;
+    --primitive-gold:#A16207;
+    --primitive-salmon:#C2410C;
+    --primitive-deepsea:#0E1223;
+    --primitive-fresh:#059669;
+    --primitive-white:#FFFFFF;
+    --primitive-ivory:#FAFAF9;
+    --primitive-muted:#E8ECF0;
+
+    /* Layer 2 — Semantic（语义映射）*/
+    --color-primary:var(--primitive-charcoal);
+    --color-accent:var(--primitive-gold);
+    --color-salmon:var(--primitive-salmon);
+    --color-deepsea:var(--primitive-deepsea);
+    --color-fresh:var(--primitive-fresh);
+    --color-background:var(--primitive-ivory);
+    --color-foreground:var(--primitive-black);
+    --color-card:var(--primitive-white);
+    --color-muted:var(--primitive-muted);
+    --color-muted-foreground:#475569;
+    --color-border:#D6D3D1;
+
+    /* Layer 3 — Component（组件级）*/
+    --btn-primary-bg:var(--color-salmon);
+    --btn-primary-hover:rgba(194,65,12,0.92);
+    --tag-origin-bg:var(--color-deepsea);
+    --badge-fresh-bg:var(--color-fresh);
+    --price-color:var(--color-salmon);
+
+    /* 间距系统（Density 5/10 标准）*/
+    --space-xs:4px; --space-sm:8px; --space-md:16px; --space-lg:24px;
+    --space-xl:32px; --space-2xl:48px; --space-3xl:64px;
+
+    /* 阴影深度 */
+    --shadow-sm:0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md:0 4px 6px rgba(0,0,0,0.08);
+    --shadow-lg:0 10px 15px rgba(0,0,0,0.12);
+    --shadow-xl:0 20px 25px rgba(0,0,0,0.15);
+
+    /* 兼容旧变量名 */
+    --primary:var(--color-primary);
+    --accent:var(--color-accent);
+    --bg:var(--color-background);
+    --fg:var(--color-foreground);
+    --salmon:var(--color-salmon);
+    --deepsea:var(--color-deepsea);
+    --fresh:var(--color-fresh);
+    --muted:var(--color-muted);
+    --mutedfg:var(--color-muted-foreground);
+    --border:var(--color-border);
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
@@ -46,18 +96,30 @@
   .glass-dark{background:rgba(14,18,35,0.85);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:32px}
   @supports (backdrop-filter:blur(16px)){.glass-dark{background:rgba(14,18,35,0.55);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%)}}
 
-  /* --- 产地卡 --- */
-  .origin-card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 4px 6px rgba(0,0,0,0.07);transition:transform 200ms ease,box-shadow 200ms ease}
-  .origin-card:hover{transform:translateY(-4px);box-shadow:0 10px 20px rgba(0,0,0,0.12)}
-  .freshness-seg{width:8px;height:24px;background:var(--border);border-radius:2px}
-  .freshness-seg.on{background:var(--fresh)}
+  /* --- 产地卡（用设计系统 token）--- */
+  .origin-card{background:var(--color-card);border-radius:16px;padding:24px;box-shadow:var(--shadow-md);transition:transform 200ms ease,box-shadow 200ms ease}
+  .origin-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-xl)}
+  .freshness-seg{width:8px;height:24px;background:var(--color-border);border-radius:2px}
+  .freshness-seg.on{background:var(--color-fresh)}
 
   /* --- 冷链时间轴 --- */
-  .coldchain{background:var(--deepsea);border-radius:24px;padding:32px;color:#fff}
-  .chain-connector{height:2px;background:linear-gradient(90deg,var(--fresh) 0%,var(--salmon) 100%)}
+  .coldchain{background:var(--color-deepsea);border-radius:24px;padding:32px;color:#fff}
+  .chain-connector{height:2px;background:linear-gradient(90deg,var(--color-fresh) 0%,var(--color-salmon) 100%)}
 
   /* --- CTA 渐变 --- */
-  .cta-grad{background:linear-gradient(135deg,#0E1223 0%,#1C1917 50%,#0E1223 100%)}
+  .cta-grad{background:linear-gradient(135deg,var(--color-deepsea) 0%,var(--color-primary) 50%,var(--color-deepsea) 100%)}
+
+  /* --- CTA 主按钮（三文鱼橙，设计系统 Layer 3）--- */
+  .btn-primary{background:var(--btn-primary-bg);color:#fff;padding:14px 32px;border-radius:8px;font-weight:600;cursor:pointer;border:none;transition:all 200ms ease}
+  .btn-primary:hover{background:var(--btn-primary-hover);transform:translateY(-1px);box-shadow:var(--shadow-md)}
+
+  /* --- 玻璃卡（Liquid Glass + 安卓降级）--- */
+  .glass-card{background:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.3);border-radius:16px;padding:28px;box-shadow:var(--shadow-lg);transition:all 250ms ease}
+  @supports not (backdrop-filter:blur(12px)){.glass-card{background:rgba(255,255,255,0.92)}}
+  .glass-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-xl)}
+
+  /* --- 价格数字 --- */
+  .price{font-family:'Montserrat',sans-serif;font-weight:700;color:var(--price-color);font-size:32px;font-variant-numeric:tabular-nums}
 
   /* --- 微信 WebView 通用降级 --- */
   .avoid-scale{touch-action:manipulation}
@@ -66,7 +128,7 @@
 <!-- Tailwind CDN（增强，关键样式已内联，微信内即使慢加载也能降级）-->
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
-tailwind.config = {theme:{extend:{colors:{primary:'#1C1917',accent:'#A16207',background:'#FAFAF9',foreground:'#0C0A09',salmon:'#C2410C',deepsea:'#0E1223',fresh:'#059669',muted:'#E8ECF0',mutedfg:'#475569',border:'#D6D3D1'},fontFamily:{cormorant:['Cormorant','serif'],montserrat:['Montserrat','sans-serif']}}}}
+tailwind.config = {theme:{extend:{colors:{'primitive-black':'#0C0A09','primitive-charcoal':'#1C1917','primitive-stone':'#44403C','primitive-gold':'#A16207','primitive-salmon':'#C2410C','primitive-deepsea':'#0E1223','primitive-fresh':'#059669','primitive-white':'#FFFFFF','primitive-ivory':'#FAFAF9','primitive-muted':'#E8ECF0',primary:'#1C1917',accent:'#A16207','salmon':'#C2410C','deepsea':'#0E1223','fresh':'#059669',background:'#FAFAF9',foreground:'#0C0A09',muted:'#E8ECF0',mutedfg:'#475569',border:'#D6D3D1'},fontFamily:{cormorant:['Cormorant','serif'],montserrat:['Montserrat','sans-serif']},boxShadow:{'sm':'0 1px 2px rgba(0,0,0,0.05)','md':'0 4px 6px rgba(0,0,0,0.08)','lg':'0 10px 15px rgba(0,0,0,0.12)','xl':'0 20px 25px rgba(0,0,0,0.15)'}}}}
 </script>
 
 <!-- Google Fonts（异步加载，不阻塞首屏）-->
@@ -93,7 +155,7 @@ tailwind.config = {theme:{extend:{colors:{primary:'#1C1917',accent:'#A16207',bac
       <a href="#coldchain" style="cursor:pointer">冷链全程</a>
       <a href="#reviews" style="cursor:pointer">市场口碑</a>
     </nav>
-    <a href="#cta" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;border:none">
+    <a href="#cta" style="display:inline-flex;align-items:center;gap:8px;background:var(--btn-primary-bg);color:#fff;padding:10px 20px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;border:none">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
       立即尝鲜
     </a>
@@ -118,7 +180,7 @@ tailwind.config = {theme:{extend:{colors:{primary:'#1C1917',accent:'#A16207',bac
         烟台黄海冷水团深海养殖 · -196℃ 液氮急冻锁鲜 · 每片可溯源至养殖池
       </p>
       <div class="reveal reveal-delay-3" style="display:flex;flex-wrap:wrap;gap:16px;margin-top:40px">
-        <a href="#cta" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:14px 32px;border-radius:8px;font-weight:600;cursor:pointer;border:none;box-shadow:0 10px 20px rgba(161,98,7,0.3)">
+        <a href="#cta" style="display:inline-flex;align-items:center;gap:8px;background:var(--btn-primary-bg);color:#fff;padding:14px 32px;border-radius:8px;font-weight:600;cursor:pointer;border:none;box-shadow:0 10px 20px rgba(194,65,12,0.3)">
           立即尝鲜 ¥98 起
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </a>
@@ -142,11 +204,11 @@ tailwind.config = {theme:{extend:{colors:{primary:'#1C1917',accent:'#A16207',bac
           <img src="image_set/white_bg_v2.jpg" alt="三文鱼主图" style="width:100%;height:160px;object-fit:cover"/>
         </div>
         <div style="display:flex;align-items:baseline;gap:8px;margin-top:16px">
-          <span style="font-size:28px;font-weight:700" class="tabular-nums">¥128</span>
+          <span class="price">¥128</span>
           <span style="font-size:14px;color:rgba(255,255,255,0.5);text-decoration:line-through">¥198</span>
         </div>
         <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px">400g · 刺身级 · 虹鳟</div>
-        <button style="width:100%;margin-top:16px;background:var(--salmon);color:#fff;padding:10px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;border:none">加入购物车</button>
+        <button style="width:100%;margin-top:16px;background:var(--btn-primary-bg);color:#fff;padding:10px;border-radius:8px;font-weight:600;font-size:14px;cursor:pointer;border:none">加入购物车</button>
       </div>
     </div>
   </div>
@@ -167,14 +229,14 @@ tailwind.config = {theme:{extend:{colors:{primary:'#1C1917',accent:'#A16207',bac
         <div style="display:flex;align-items:flex-start;justify-content:space-between">
           <!-- 烟台地标剪影 -->
           <svg width="48" height="32" viewBox="0 0 48 32" aria-hidden="true" style="border-radius:4px;box-shadow:0 2px 4px rgba(0,0,0,0.1)">
-            <rect width="48" height="32" fill="#1E3A5F"/>
-            <rect x="6" y="18" width="4" height="10" fill="#C2410C"/>
-            <rect x="14" y="14" width="4" height="14" fill="#C2410C"/>
-            <rect x="22" y="10" width="4" height="18" fill="#C2410C"/>
-            <polygon points="22,4 26,10 18,10" fill="#A16207"/>
-            <rect x="32" y="16" width="4" height="12" fill="#C2410C"/>
-            <rect x="40" y="20" width="4" height="8" fill="#C2410C"/>
-            <rect y="26" width="48" height="6" fill="#0E1223"/>
+            <rect width="48" height="32" fill="var(--primitive-deepsea)"/>
+            <rect x="6" y="18" width="4" height="10" fill="var(--primitive-salmon)"/>
+            <rect x="14" y="14" width="4" height="14" fill="var(--primitive-salmon)"/>
+            <rect x="22" y="10" width="4" height="18" fill="var(--primitive-salmon)"/>
+            <polygon points="22,4 26,10 18,10" fill="var(--primitive-gold)"/>
+            <rect x="32" y="16" width="4" height="12" fill="var(--primitive-salmon)"/>
+            <rect x="40" y="20" width="4" height="8" fill="var(--primitive-salmon)"/>
+            <rect y="26" width="48" height="6" fill="var(--primitive-charcoal)"/>
           </svg>
           <span style="font-size:12px;color:#fff;background:var(--salmon);padding:4px 10px;border-radius:9999px;font-weight:600">100% 主产地</span>
         </div>
@@ -214,7 +276,7 @@ tailwind.config = {theme:{extend:{colors:{primary:'#1C1917',accent:'#A16207',bac
         </p>
         <div style="margin-top:16px;display:flex;gap:8px">
           <div style="flex:1;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:8px;padding:8px 12px;font-size:12px;color:rgba(255,255,255,0.5)">如: YT261008B301</div>
-          <button style="background:var(--salmon);color:#fff;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;border:none">查询</button>
+          <button style="background:var(--btn-primary-bg);color:#fff;font-size:12px;font-weight:600;padding:8px 12px;border-radius:8px;cursor:pointer;border:none">查询</button>
         </div>
       </article>
     </div>
@@ -394,7 +456,7 @@ tailwind.config = {theme:{extend:{colors:{primary:'#1C1917',accent:'#A16207',bac
       </p>
 
       <div style="margin-top:40px;display:flex;flex-wrap:wrap;justify-content:center;gap:16px">
-        <a href="#" style="display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:16px 40px;border-radius:8px;font-weight:700;font-size:18px;cursor:pointer;border:none;box-shadow:0 20px 40px rgba(161,98,7,0.3)">
+        <a href="#" style="display:inline-flex;align-items:center;gap:8px;background:var(--btn-primary-bg);color:#fff;padding:16px 40px;border-radius:8px;font-weight:700;font-size:18px;cursor:pointer;border:none;box-shadow:0 20px 40px rgba(194,65,12,0.3)">
           立即尝鲜 ¥98 起
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </a>
