@@ -129,7 +129,10 @@
   .cart-close:hover{background:var(--color-muted)}
   .cart-items{flex:1;overflow-y:auto;padding:16px 24px}
   .cart-item{display:flex;gap:12px;padding:16px 0;border-bottom:1px solid var(--color-muted)}
-  .cart-item-img{width:72px;height:72px;border-radius:8px;object-fit:cover;background:var(--color-muted);flex-shrink:0}
+  .cart-item-img{width:72px;height:72px;border-radius:8px;object-fit:cover;background:var(--color-muted);flex-shrink:0;border:1px solid var(--color-border);transition:transform 200ms ease}
+  .cart-item:hover .cart-item-img{transform:scale(1.05)}
+  .cart-item-img-fallback{width:72px;height:72px;border-radius:8px;background:linear-gradient(135deg,#FDE8E0,#FFE4D6);flex-shrink:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--color-border)}
+  .cart-item-img-fallback svg{color:var(--color-salmon)}
   .cart-item-info{flex:1;min-width:0}
   .cart-item-name{font-weight:600;color:var(--color-primary);font-size:14px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .cart-item-specs{font-size:12px;color:var(--color-muted-foreground);margin-bottom:8px}
@@ -568,6 +571,29 @@ tailwind.config = {theme:{extend:{colors:{'primitive-black':'#0C0A09','primitive
 
 <!-- ============ 购物车完整 JS ============ -->
 <script>
+/* ===== 图片路径解析：兼容本地 + GitHub Pages ===== */
+function resolveImgPath(p) {
+  if (!p) return '';
+  if (p.startsWith('http://') || p.startsWith('https://') || p.startsWith('data:')) return p;
+  var base = location.pathname.substring(0, location.pathname.lastIndexOf('/') + 1);
+  return base + p;
+}
+
+/* ===== 图片加载失败占位 ===== */
+function imgFallback(img) {
+  var fb = document.createElement('div');
+  fb.className = 'cart-item-img-fallback';
+  fb.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+  img.parentNode.replaceChild(fb, img);
+}
+
+/* ===== 规格映射图片 ===== */
+var IMAGE_MAP = {
+  default: 'image_set/white_bg_v2.jpg',
+  scene: 'image_set/scene.jpg',
+  features: 'image_set/key_features.jpg'
+};
+
 /* ===== 购物车核心：localStorage 持久化 ===== */
 var CART_KEY = 'salmon_cart_v1';
 var FAV_KEY = 'salmon_fav_v1';
@@ -697,8 +723,9 @@ function renderCart() {
     return;
   }
   var html = cart.map(function(item, idx){
+    var imgSrc = resolveImgPath(item.image);
     return '<div class="cart-item">' +
-      '<img class="cart-item-img" src="' + item.image + '" alt="' + item.name + '" loading="lazy">' +
+      '<img class="cart-item-img" src="' + imgSrc + '" alt="' + item.name + '" loading="lazy" onerror="imgFallback(this)">' +
       '<div class="cart-item-info">' +
         '<div class="cart-item-name">' + item.name + '</div>' +
         '<div class="cart-item-specs">' + item.weight + ' · ' + item.cutting + ' · ' + item.origin + '</div>' +
