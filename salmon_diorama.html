@@ -157,6 +157,137 @@ B(1.18,0.08,0.12, M(0x8a8272), 1.05,2.32,-0.74, false);
 var mat2 = new THREE.Mesh(new THREE.BoxGeometry(1.5,0.03,0.75), M(0x2f6b52));
 mat2.position.set(1.05,0.105,-0.35); scene.add(mat2); addEdges(mat2,0.3);
 
+/* 「鱼」字主视觉立牌（店旁灯箱）*/
+function salmonSlice(ctx,x,y,s,rot){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.scale(s,s);
+  var g2 = ctx.createLinearGradient(-45,-35,45,35);
+  g2.addColorStop(0,'#ff9a5c'); g2.addColorStop(1,'#ff6a2e');
+  ctx.fillStyle = g2;
+  ctx.beginPath();
+  ctx.moveTo(-52,6);
+  ctx.quadraticCurveTo(-30,-42,18,-34);
+  ctx.quadraticCurveTo(58,-24,50,10);
+  ctx.quadraticCurveTo(40,40,-6,36);
+  ctx.quadraticCurveTo(-44,32,-52,6);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineCap = 'round';
+  [[-34,-14,8,26,6,32,5.5],[-10,-26,10,8,22,20,5],[16,-24,28,-2,36,14,4.5]].forEach(function(st){
+    ctx.lineWidth = st[6];
+    ctx.beginPath(); ctx.moveTo(st[0],st[1]);
+    ctx.quadraticCurveTo(st[2],st[3],st[4],st[5]); ctx.stroke();
+  });
+  ctx.restore();
+}
+var boardTex = textTex(512, 1024, function(ctx,w,h){
+  var bg = ctx.createLinearGradient(0,0,0,h);
+  bg.addColorStop(0,'#0d2f74'); bg.addColorStop(.55,'#1b57b8'); bg.addColorStop(1,'#0a2456');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,w,h);
+  for(var i=0;i<26;i++){
+    ctx.fillStyle = 'rgba(255,255,255,'+(0.02+Math.random()*0.05).toFixed(3)+')';
+    ctx.fillRect(Math.random()*w, 0, 2+Math.random()*10, h);
+  }
+  ctx.fillStyle = '#eaf4ff'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.font = 'bold 34px "Microsoft YaHei",sans-serif';
+  ctx.fillText('好品东方', 36, 76);
+  ctx.fillText('以鱼会友', 36, 120);
+  ctx.textAlign = 'right';
+  ctx.font = 'bold 42px "Microsoft YaHei",sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText('蓝塞夫', w-36, 82);
+  ctx.font = '20px Arial'; ctx.fillStyle = 'rgba(255,255,255,.8)';
+  ctx.fillText('Blue Sea Food', w-36, 112);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '900 420px "STXingkai","华文行楷","KaiTi","STKaiti","SimHei",serif';
+  ctx.fillStyle = 'rgba(255,255,255,.25)'; ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 48;
+  ctx.fillText('鱼', w/2+8, 458);
+  ctx.shadowBlur = 26; ctx.fillStyle = '#f6fbff';
+  ctx.fillText('鱼', w/2, 448);
+  ctx.shadowBlur = 0;
+  salmonSlice(ctx,112,842,1.0,-0.10);
+  salmonSlice(ctx,226,854,0.94,0.06);
+  salmonSlice(ctx,338,846,1.02,-0.04);
+  salmonSlice(ctx,440,858,0.9,0.10);
+  ctx.textBaseline = 'alphabetic'; ctx.font = '20px Arial';
+  ctx.fillStyle = 'rgba(255,255,255,.75)';
+  ctx.fillText('B L U E   S E A   F O O D', w/2, h-34);
+});
+var sb = new THREE.Group(); sb.position.set(-2.78,0.1,-0.02); sb.rotation.y = 0.34; scene.add(sb);
+var sbBack = new THREE.Mesh(new THREE.BoxGeometry(0.68,1.62,0.05), M(0x39405a));
+sbBack.position.set(0,1.0,0); sb.add(sbBack); addEdges(sbBack,0.4);
+var sbFace = new THREE.Mesh(new THREE.PlaneGeometry(0.6,1.5), new THREE.MeshBasicMaterial({map:boardTex}));
+sbFace.position.set(0,1.02,0.032); sb.add(sbFace);
+[[0,1.83,0.64,0.03],[0,0.2,0.64,0.03],[-0.325,1.01,0.03,1.56],[0.325,1.01,0.03,1.56]].forEach(function(f){
+  var fr = new THREE.Mesh(new THREE.BoxGeometry(f[2],f[3],0.02), GLOW(0xcfe4ff,{transparent:true,opacity:0.75}));
+  fr.position.set(f[0],f[1],0.03); sb.add(fr);
+});
+[[-0.2],[0.2]].forEach(function(p){
+  var leg = new THREE.Mesh(new THREE.CylinderGeometry(0.024,0.024,0.42,8), M(0x39405a));
+  leg.position.set(p[0],0.21,0); sb.add(leg);
+  var foot = new THREE.Mesh(new THREE.BoxGeometry(0.16,0.03,0.16), M(0x2a2f45));
+  foot.position.set(p[0],0.015,0); sb.add(foot);
+});
+var sbTop = new THREE.Mesh(new THREE.BoxGeometry(0.72,0.05,0.1), M(0x2a2f45));
+sbTop.position.set(0,1.85,0); sb.add(sbTop); addEdges(sbTop,0.4);
+shadowPad(-2.6,0.2,0.55,0.35);
+var sbLight = new THREE.PointLight(0xbfd8ff, 0.65, 2.6); sbLight.position.set(-2.5,1.95,0.5); scene.add(sbLight);
+
+/* 営業中 霓虹小灯牌（门侧）*/
+var openTex = textTex(128, 384, function(ctx,w,h){
+  ctx.fillStyle = '#101423'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle = '#ff5d5d'; ctx.lineWidth = 6; ctx.shadowColor = '#ff5d5d'; ctx.shadowBlur = 16;
+  ctx.strokeRect(10,10,w-20,h-20);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = 'bold 74px "Yu Gothic","Hiragino Sans","Microsoft YaHei",sans-serif';
+  ctx.fillStyle = '#ffdada'; ctx.shadowColor = '#ff5d5d'; ctx.shadowBlur = 24;
+  ctx.fillText('営', w/2, 76);
+  ctx.fillText('業', w/2, 192);
+  ctx.fillText('中', w/2, 308);
+});
+var openSign = new THREE.Mesh(new THREE.BoxGeometry(0.3,0.84,0.06),
+  [M(0x101423),M(0x101423),M(0x101423),M(0x101423),new THREE.MeshBasicMaterial({map:openTex}),M(0x101423)]);
+openSign.position.set(2.32,2.0,-0.66); scene.add(openSign); addEdges(openSign,0.4);
+var openLight = new THREE.PointLight(0xff6b6b, 0.55, 2.2); openLight.position.set(2.32,2.0,-0.3); scene.add(openLight);
+
+/* 店内精细化：冰柜价签灯条 / 吊挂菜单 / 顶棚管线 / 挂钟 */
+B(2.3,0.05,0.02, GLOW(0xfff3d2), -1.25,1.06,-3.66, false);
+var menuTex = textTex(512, 288, function(ctx,w,h){
+  ctx.fillStyle = '#151d36'; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle = 'rgba(140,190,255,.6)'; ctx.lineWidth = 4; ctx.strokeRect(8,8,w-16,h-16);
+  ctx.fillStyle = '#8be9ff'; ctx.font = 'bold 44px "Yu Gothic","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center'; ctx.fillText('本日のおすすめ', w/2, 62);
+  ctx.font = '30px "Microsoft YaHei",sans-serif'; ctx.fillStyle = '#f2f6ff';
+  [['盐烤三文鱼排 ¥32',120],['虹鳟亲子丼 ¥28',178],['三文鱼茶泡饭 ¥24',236]].forEach(function(it){
+    ctx.textAlign = 'left';  ctx.fillText(it[0], 44, it[1]);
+    ctx.textAlign = 'right'; ctx.fillText('●', w-44, it[1]);
+  });
+});
+var menuBoard = new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.56), new THREE.MeshBasicMaterial({map:menuTex}));
+menuBoard.position.set(0.15,2.42,-3.0); scene.add(menuBoard);
+B(0.015,0.22,0.015, M(0x6e7284), -0.25,2.81,-3.0, false);
+B(0.015,0.22,0.015, M(0x6e7284),  0.55,2.81,-3.0, false);
+var pipe1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,2.4,8), M(0x9aa3c0));
+pipe1.rotation.x = Math.PI/2; pipe1.position.set(2.2,2.7,-3.4); scene.add(pipe1);
+var pipe2 = new THREE.Mesh(new THREE.CylinderGeometry(0.035,0.035,2.4,8), M(0x8a92aa));
+pipe2.rotation.x = Math.PI/2; pipe2.position.set(2.05,2.62,-3.3); scene.add(pipe2);
+var clockFace = new THREE.Mesh(new THREE.CylinderGeometry(0.17,0.17,0.04,20), M(0xf4f0e6));
+clockFace.rotation.x = Math.PI/2; clockFace.position.set(-1.2,2.25,-4.58); scene.add(clockFace);
+B(0.02,0.11,0.012, M(0x2a2f45), -1.2,2.29,-4.55, false);
+B(0.08,0.02,0.012, M(0x2a2f45), -1.17,2.25,-4.55, false);
+
+/* 门口绿植 ×2 + 井盖 */
+[[-1.9,-0.3],[2.3,-0.3]].forEach(function(p){
+  var pot = new THREE.Mesh(new THREE.CylinderGeometry(0.14,0.11,0.28,10), M(0xb0653f));
+  pot.position.set(p[0],0.25,p[1]); scene.add(pot); addEdges(pot,0.3);
+  [[0,0.5,0,0.16],[-0.09,0.42,0.05,0.11],[0.1,0.44,-0.04,0.12]].forEach(function(lf){
+    var leaf = new THREE.Mesh(new THREE.SphereGeometry(lf[3],8,7), M(0x3f8f5f));
+    leaf.position.set(p[0]+lf[0],0.24+lf[1],p[1]+lf[2]); scene.add(leaf);
+  });
+});
+var mh = new THREE.Mesh(new THREE.CircleGeometry(0.34,20), M(0x1e2438));
+mh.rotation.x = -Math.PI/2; mh.position.set(0.9,0.08,1.5); scene.add(mh);
+var mhRing = new THREE.Mesh(new THREE.RingGeometry(0.26,0.31,20), M(0x39405a));
+mhRing.rotation.x = -Math.PI/2; mhRing.position.set(0.9,0.081,1.5); scene.add(mhRing);
+
 /* 条纹雨棚（品红白）*/
 for(var i2=0;i2<9;i2++){
   var st = new THREE.Mesh(new THREE.BoxGeometry(0.62,0.07,1.05), M(i2%2?0xf3efe4:0xd63d6d));
@@ -164,23 +295,75 @@ for(var i2=0;i2<9;i2++){
   if(i2%2) addEdges(st,0.22);
 }
 
-/* 店招横匾（霓虹）*/
-var signCv = textTex(1024, 160, function(ctx,w,h){
-  ctx.fillStyle = '#141826'; ctx.fillRect(0,0,w,h);
-  ctx.strokeStyle = '#ff4d7d'; ctx.lineWidth = 10; ctx.strokeRect(8,8,w-16,h-16);
-  ctx.fillStyle = '#ffd9e5'; ctx.font = 'bold 92px "Yu Gothic","Hiragino Sans","Microsoft YaHei",sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.shadowColor = '#ff4d7d'; ctx.shadowBlur = 26;
-  ctx.fillText('サーモン鮮切', w/2-60, h/2+6);
-  ctx.shadowBlur = 0; ctx.fillStyle = '#8be9ff'; ctx.font = 'bold 40px Arial';
-  ctx.fillText('SALMON', w-150, h/2);
+/* 店招「从头吃到尾」· 日式霓虹立体招牌 */
+function fishNeon(ctx, cx, cy, len, hh){
+  ctx.save(); ctx.translate(cx, cy);
+  ctx.strokeStyle = '#4d8dff'; ctx.lineWidth = 7;
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 20;
+  var L = len/2;
+  ctx.beginPath();                                  /* 鱼身上弧 */
+  ctx.moveTo(-L+6, -2);
+  ctx.quadraticCurveTo(-L*0.42, -hh, L*0.34, -hh*0.52);
+  ctx.stroke();
+  ctx.beginPath();                                  /* 鱼身下弧 */
+  ctx.moveTo(-L+6, -2);
+  ctx.quadraticCurveTo(-L*0.38, hh*1.04, L*0.3, hh*0.56);
+  ctx.stroke();
+  ctx.beginPath();                                  /* 鱼尾三撇 */
+  ctx.moveTo(L*0.32, -hh*0.5);
+  ctx.quadraticCurveTo(L*0.72, -hh*1.1, L+16, -hh*0.92);
+  ctx.moveTo(L*0.32, hh*0.54);
+  ctx.quadraticCurveTo(L*0.7, hh*1.1, L+16, hh*0.92);
+  ctx.moveTo(L*0.34, 0);
+  ctx.lineTo(L+18, 0);
+  ctx.stroke();
+  ctx.beginPath();                                  /* 鱼鳃线 */
+  ctx.moveTo(-L+52, -hh*0.42);
+  ctx.quadraticCurveTo(-L+30, 0, -L+52, hh*0.44);
+  ctx.stroke();
+  ctx.beginPath(); ctx.arc(-L+78, 4, 7, 0, 7); ctx.stroke();  /* 鱼眼 */
+  ctx.beginPath();                                  /* 背鳍/腹鳍 */
+  ctx.moveTo(-L*0.34, -hh*0.78); ctx.lineTo(-L*0.22, -hh*1.08);
+  ctx.moveTo(-L*0.08, -hh*0.88); ctx.lineTo(0, -hh*1.16);
+  ctx.moveTo(-L*0.3, hh*0.84); ctx.lineTo(-L*0.2, hh*1.1);
+  ctx.stroke();
+  ctx.restore();
+}
+var signTex = textTex(1024, 256, function(ctx,w,h){
+  var bg = ctx.createLinearGradient(0,0,0,h);
+  bg.addColorStop(0,'#151b32'); bg.addColorStop(1,'#0a0e1d');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle = '#3f74ff'; ctx.lineWidth = 6;   /* 霓虹双框 */
+  ctx.shadowColor = '#3f74ff'; ctx.shadowBlur = 18;
+  ctx.strokeRect(14,14,w-28,h-28);
+  ctx.shadowBlur = 0; ctx.strokeStyle = 'rgba(200,225,255,.85)'; ctx.lineWidth = 2;
+  ctx.strokeRect(26,26,w-52,h-52);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(215,232,255,.85)';
+  ctx.font = '22px "Microsoft YaHei",sans-serif';
+  ctx.fillText('— 吃 · 鱼 · 图 · 鉴 —', w/2, 58);
+  fishNeon(ctx, w/2, h/2+16, 300, 46);
+  ctx.font = 'bold 60px "STKaiti","KaiTi","SimHei",serif';
+  ctx.fillStyle = '#ecf5ff'; ctx.shadowColor = '#6db5ff'; ctx.shadowBlur = 22;
+  ctx.fillText('从 头', w/2-16, h/2+6);
+  ctx.fillText('到吃尾', w/2+14, h/2+66);
+  ctx.shadowBlur = 0;
+  ctx.font = 'bold 24px "Microsoft YaHei",sans-serif';
+  ctx.fillStyle = '#9fc5ff'; ctx.shadowColor = '#3f74ff'; ctx.shadowBlur = 10;
+  ctx.fillText('清爽美味 · 低卡美食', w/2, h-20);
+  ctx.shadowBlur = 0;
 });
-var sign = new THREE.Mesh(new THREE.BoxGeometry(3.9,0.6,0.1),
-  [M(0x1a1f30),M(0x1a1f30),M(0x1a1f30),M(0x1a1f30),
-   new THREE.MeshBasicMaterial({map:signCv}), M(0x1a1f30)]);
-sign.position.set(-0.25,3.02,-0.62); scene.add(sign); addEdges(sign,0.45);
-B(0.05,0.42,0.05, GLOW(0x8be9ff), -2.25,2.72,-0.6, false); // 霓虹立管
-var neonBar = B(3.95,0.05,0.05, GLOW(0xff4d7d), -0.25,3.36,-0.6, false); // 顶部霓虹管
+var signBox = new THREE.Mesh(new THREE.BoxGeometry(4.5,1.12,0.18), M(0x10152a));
+signBox.position.set(-0.25,3.38,-0.5); scene.add(signBox); addEdges(signBox,0.4);
+var signFace = new THREE.Mesh(new THREE.PlaneGeometry(4.34,0.98), new THREE.MeshBasicMaterial({map:signTex}));
+signFace.position.set(-0.25,3.38,-0.405); scene.add(signFace);
+var trimT = B(4.5,0.045,0.045, GLOW(0x4d8dff), -0.25,3.97,-0.4, false);  /* 霓虹饰条 */
+var trimB = B(4.5,0.045,0.045, GLOW(0x4d8dff), -0.25,2.79,-0.4, false);
+B(0.05,0.34,0.05, M(0x39405a), -1.8,2.97,-0.42, false);  /* L 型支架 */
+B(0.05,0.34,0.05, M(0x39405a),  1.3,2.97,-0.42, false);
+B(0.32,0.05,0.05, M(0x39405a), -1.94,2.83,-0.42, false);
+B(0.32,0.05,0.05, M(0x39405a),  1.16,2.83,-0.42, false);
 
 /* ============================================================
    ③ 店内（透过大玻璃可见 · 明亮温暖）
@@ -415,7 +598,7 @@ var moon = new THREE.DirectionalLight(0x7d8fc9, 0.4);
 moon.position.set(-7,11,5); scene.add(moon);
 var shopLight1 = new THREE.PointLight(0xffb45e, 1.7, 10); shopLight1.position.set(0,2.4,-2.9); scene.add(shopLight1);
 var shopLight2 = new THREE.PointLight(0xffd9a0, 1.15, 7);  shopLight2.position.set(-1.2,1.9,-1.7); scene.add(shopLight2);
-var neonLight = new THREE.PointLight(0xff4d7d, 1.1, 5.5);  neonLight.position.set(-0.3,3.0,-0.4); scene.add(neonLight);
+var neonLight = new THREE.PointLight(0x5f9dff, 1.2, 6);   neonLight.position.set(-0.25,3.45,0.1); scene.add(neonLight);
 
 /* ============================================================
    ⑥ 雨（LineSegments 短竖线 · 日式动画雨感）
@@ -452,9 +635,11 @@ function tick(){
     }
   }
   rainGeo.attributes.position.needsUpdate = true;
-  /* 霓虹呼吸闪烁 */
-  neonLight.intensity = 1.05 + Math.sin(t*2.4)*0.14 + (Math.random()<0.012 ? -0.7 : 0);
-  neonBar.material.color.setHex(Math.random()<0.012 ? 0x88243f : 0xff4d7d);
+  /* 霓虹呼吸闪烁（蓝）*/
+  neonLight.intensity = 1.15 + Math.sin(t*2.4)*0.14 + (Math.random()<0.012 ? -0.75 : 0);
+  var signFlick = Math.random() < 0.015;
+  trimT.material.color.setHex(signFlick ? 0x182c5c : 0x4d8dff);
+  trimB.material.color.setHex(signFlick ? 0x182c5c : 0x4d8dff);
   vmPanel.material.color.setHex(Math.random()<0.008 ? 0x8fb6cf : 0xcfeaff);
   /* 鱼游动 */
   koi.position.x = 2.02 + Math.sin(t*1.3)*0.14;
