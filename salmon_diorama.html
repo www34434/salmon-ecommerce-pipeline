@@ -161,7 +161,7 @@ mat2.position.set(1.05,0.105,-0.35); scene.add(mat2); addEdges(mat2,0.3);
 function salmonSlice(ctx,x,y,s,rot){
   ctx.save(); ctx.translate(x,y); ctx.rotate(rot); ctx.scale(s,s);
   var g2 = ctx.createLinearGradient(-45,-35,45,35);
-  g2.addColorStop(0,'#ff9a5c'); g2.addColorStop(1,'#ff6a2e');
+  g2.addColorStop(0,'#ffb26a'); g2.addColorStop(0.5,'#ff7a3c'); g2.addColorStop(1,'#e8512a');
   ctx.fillStyle = g2;
   ctx.beginPath();
   ctx.moveTo(-52,6);
@@ -170,12 +170,17 @@ function salmonSlice(ctx,x,y,s,rot){
   ctx.quadraticCurveTo(40,40,-6,36);
   ctx.quadraticCurveTo(-44,32,-52,6);
   ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.lineCap = 'round';
-  [[-34,-14,8,26,6,32,5.5],[-10,-26,10,8,22,20,5],[16,-24,28,-2,36,14,4.5]].forEach(function(st){
+  /* 脂肪白纹（三文鱼刺身标志性）*/
+  ctx.strokeStyle = 'rgba(255,250,240,.82)'; ctx.lineCap = 'round';
+  [[-38,-20,-12,4,2,14,4.5],[-20,-30,2,8,18,22,4],[-2,-32,16,-2,30,14,3.8],
+   [14,-26,28,0,40,12,3.4],[-44,-6,-22,10,-4,22,3.6],[-30,12,-10,24,10,30,3.2]].forEach(function(st){
     ctx.lineWidth = st[6];
     ctx.beginPath(); ctx.moveTo(st[0],st[1]);
     ctx.quadraticCurveTo(st[2],st[3],st[4],st[5]); ctx.stroke();
   });
+  /* 高光反光 */
+  ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.moveTo(-28,-18); ctx.quadraticCurveTo(-8,-8,8,-4); ctx.stroke();
   ctx.restore();
 }
 var boardTex = textTex(512, 1024, function(ctx,w,h){
@@ -212,8 +217,22 @@ var boardTex = textTex(512, 1024, function(ctx,w,h){
   ctx.fillText('B L U E   S E A   F O O D', w/2, h-34);
 });
 var sb = new THREE.Group(); sb.position.set(-2.78,0.1,-0.02); sb.rotation.y = 0.34; scene.add(sb);
-var sbBack = new THREE.Mesh(new THREE.BoxGeometry(0.68,1.62,0.05), M(0x39405a));
-sbBack.position.set(0,1.0,0); sb.add(sbBack); addEdges(sbBack,0.4);
+/* 透明亚克力外壳（前后面板）*/
+var acrylMat = new THREE.MeshPhongMaterial({
+  color:0x8fbaff, transparent:true, opacity:0.18, shininess:120, specular:0xbfd8ff, depthWrite:false});
+var acrylFront = new THREE.Mesh(new THREE.BoxGeometry(0.72,1.68,0.02), acrylMat);
+acrylFront.position.set(0,1.0,0.05); sb.add(acrylFront);
+var acrylBack = new THREE.Mesh(new THREE.BoxGeometry(0.72,1.68,0.02), acrylMat.clone());
+acrylBack.position.set(0,1.0,-0.05); acrylBack.material.opacity = 0.12; sb.add(acrylBack);
+/* 亚克力侧条（淡蓝发光边缘）*/
+[[0.36,0,1.0,0.1],[0.36,0,1.0,-0.1],[-0.02,1.84,0.76,0],[-0.02,0.16,0.76,0]].forEach(function(s){
+  var edge = new THREE.Mesh(new THREE.BoxGeometry(s[2],s[3]?s[3]:0.02, s[3]?0.02:s[3]),
+    GLOW(0xbfd8ff,{transparent:true,opacity:0.85}));
+  edge.position.set(s[0],s[1],s[3]||s[2]); sb.add(edge);
+});
+/* 内部灯箱背板（反光白）*/
+var sbBack = new THREE.Mesh(new THREE.BoxGeometry(0.64,1.56,0.03), M(0xf0f4ff));
+sbBack.position.set(0,1.0,-0.042); sb.add(sbBack);
 var sbFace = new THREE.Mesh(new THREE.PlaneGeometry(0.6,1.5), new THREE.MeshBasicMaterial({map:boardTex}));
 sbFace.position.set(0,1.02,0.032); sb.add(sbFace);
 [[0,1.83,0.64,0.03],[0,0.2,0.64,0.03],[-0.325,1.01,0.03,1.56],[0.325,1.01,0.03,1.56]].forEach(function(f){
@@ -298,10 +317,22 @@ for(var i2=0;i2<9;i2++){
 /* 店招「从头吃到尾」· 日式霓虹立体招牌 */
 function fishNeon(ctx, cx, cy, len, hh){
   ctx.save(); ctx.translate(cx, cy);
-  ctx.strokeStyle = '#4d8dff'; ctx.lineWidth = 7;
-  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 20;
+  ctx.strokeStyle = '#4d8dff'; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
   var L = len/2;
+  /* 鳞片（先画，让轮廓线压在上面）*/
+  ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 14; ctx.lineWidth = 3;
+  for(var row=-3; row<=3; row++){
+    for(var col=-10; col<=8; col++){
+      var sx = col*14 + Math.abs(row)*3;
+      var sy = row*11 + (col%2===0?0:5);
+      var yLimit = hh*0.82 - Math.abs(row)*4;
+      if(Math.abs(sx)>L*0.85 || Math.abs(sy)>yLimit) continue;
+      ctx.beginPath();
+      ctx.arc(sx, sy, 5+Math.random()*1.5, Math.PI*0.15, Math.PI*0.85, false);
+      ctx.stroke();
+    }
+  }
+  ctx.shadowBlur = 22; ctx.lineWidth = 7;
   ctx.beginPath();                                  /* 鱼身上弧 */
   ctx.moveTo(-L+6, -2);
   ctx.quadraticCurveTo(-L*0.42, -hh, L*0.34, -hh*0.52);
