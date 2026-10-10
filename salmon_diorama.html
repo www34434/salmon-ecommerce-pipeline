@@ -188,7 +188,7 @@ var raindropTex = textTex(512, 512, function(ctx,w,h){
 });
 var glassMatFront = new THREE.MeshPhongMaterial({
   color:0xa8d8ff, transparent:true, opacity:0.16, shininess:200, specular:0xffffff,
-  map:raindropTex, transparentMap:raindropTex});
+  map:raindropTex});
 var glassF = new THREE.Mesh(new THREE.BoxGeometry(5.0,2.1,0.05), glassMatFront);
 glassF.position.set(0,1.55,-0.76); scene.add(glassF); addEdges(glassF,0.4);
 var glassR = new THREE.Mesh(new THREE.BoxGeometry(0.05,1.9,2.6), glassMatFront.clone());
