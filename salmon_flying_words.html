@@ -16,7 +16,7 @@ canvas{display:block;position:absolute;top:0;left:0}
 /* ================================================================
    Flying Words Tunnel — 深海三文鱼主题
    按 spec card: 22词黄金角铺位 + z轴透视推进 + 生命曲线 + 擦身而过
-   6秒2循环无缝 → 最后汇聚"深海三文鱼"
+   6秒2循环无缝 + 「深海三文鱼」五字常驻屏幕中央
    ================================================================ */
 (function(){
   var cv = document.getElementById('c');
@@ -217,6 +217,13 @@ canvas{display:block;position:absolute;top:0;left:0}
       /* 生命曲线 */
       var op = life(u);
 
+      /* 中央字标区让位：飞进「深海三文鱼」区域的词压暗 */
+      var centralDim = 1;
+      var dxE = (px-cx)/(Math.min(W,H)*0.40);
+      var dyE = (py-cy)/(Math.min(W,H)*0.20);
+      var dEll = Math.sqrt(dxE*dxE + dyE*dyE);
+      if(dEll < 1) centralDim = Math.max(0.22, dEll);
+
       /* 近端糊化：u>0.86 起线性失焦 */
       var blur = 0;
       if(u > 0.86) blur = (u-0.86) * 40;
@@ -239,7 +246,7 @@ canvas{display:block;position:absolute;top:0;left:0}
         var tx = rx2*s*0.04, ty = ry2*s*0.04;
         ctx.save();
         for(var g=6; g>=1; g--){
-          ctx.globalAlpha = op * 0.12 * (6-g+1)/6;
+          ctx.globalAlpha = op * centralDim * 0.12 * (6-g+1)/6;
           ctx.font = '700 '+fs+'px "Microsoft YaHei","SimHei",sans-serif';
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillStyle = col;
@@ -250,7 +257,7 @@ canvas{display:block;position:absolute;top:0;left:0}
 
       /* 主文字 */
       ctx.save();
-      ctx.globalAlpha = op;
+      ctx.globalAlpha = op * centralDim;
       if(blur > 0){
         ctx.filter = 'blur('+blur.toFixed(1)+'px)';
       }
@@ -269,7 +276,8 @@ canvas{display:block;position:absolute;top:0;left:0}
   }
 
   /* =============================================================
-     最后 0.5 秒：5 字从隧道中心汇聚成「深海三文鱼」
+     「深海三文鱼」五字常驻屏幕中央：
+     隧道阶段半透明垫底 → 汇聚阶段原位错峰点亮（无飞行、无粒子）
      ============================================================= */
   var FINAL_CHARS = [
     {t:'深', c:'#4d8dff', glow:'#86a8ff'},
@@ -279,8 +287,38 @@ canvas{display:block;position:absolute;top:0;left:0}
     {t:'鱼', c:'#a8d4ff', glow:'#c3e0ff'},
   ];
 
-  /* 冲击波粒子（每个字到位时炸开）*/
-  var burstParticles = [];
+  var FONT = '"Microsoft YaHei","PingFang SC","SimHei",sans-serif';
+
+  /* 五字弧形布局（中间略高、中字最大）*/
+  function charLayout(i, cx, cy, minDim){
+    var total = FINAL_CHARS.length;
+    var slotBase = minDim * 0.13;
+    var arcOffset = Math.sin((i/(total-1) - 0.5) * Math.PI) * minDim * 0.03;
+    var startX = cx - (total-1)*slotBase/2;
+    return {
+      x: startX + i*slotBase,
+      y: cy - arcOffset,
+      sizeMult: (i===2) ? 1.15 : ((i===1 || i===3) ? 1.0 : 0.9)
+    };
+  }
+
+  /* 隧道阶段：五字半透明常驻中央（呼吸）*/
+  function drawCenterTitle(alpha){
+    var cx = W/2, cy = H/2;
+    var minDim = Math.min(W,H);
+    FINAL_CHARS.forEach(function(ch, i){
+      var pos = charLayout(i, cx, cy, minDim);
+      var fs = minDim * 0.13 * pos.sizeMult;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.font = 'bold '+fs+'px '+FONT;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.shadowColor = ch.glow; ctx.shadowBlur = 16;
+      ctx.fillStyle = ch.c;
+      ctx.fillText(ch.t, pos.x, pos.y);
+      ctx.restore();
+    });
+  }
 
   function drawFinalGather(t, tStart){
     var dt = t - tStart;
@@ -288,8 +326,8 @@ canvas{display:block;position:absolute;top:0;left:0}
     var cx = W/2, cy = H/2;
     var minDim = Math.min(W,H);
 
-    /* 隧道快速淡出（前 0.3s）*/
-    var tunnelFade = Math.max(0, 1 - dt/0.3);
+    /* 隧道快速淡出（前 0.4s）*/
+    var tunnelFade = Math.max(0, 1 - dt/0.4);
     if(tunnelFade > 0){
       ctx.save();
       ctx.globalAlpha = tunnelFade * 0.6;
@@ -297,162 +335,59 @@ canvas{display:block;position:absolute;top:0;left:0}
       ctx.restore();
     }
 
-    /* 全屏预爆闪光（0.3s 起 0.4s 内渐入渐出）*/
-    if(dt > 0.28 && dt < 0.68){
-      var flashT = (dt - 0.28) / 0.4;
-      var flashAlpha = Math.sin(flashT * Math.PI) * 0.12;  /* 正弦淡入淡出，峰值 0.12 */
-      ctx.save();
-      ctx.globalAlpha = flashAlpha;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, W, H);
-      ctx.restore();
-    }
-
-    /* 冲击波粒子更新+绘制 */
-    burstParticles = burstParticles.filter(function(bp){
-      bp.life -= 0.016;
-      if(bp.life <= 0) return false;
-      bp.x += bp.vx; bp.y += bp.vy;
-      bp.vx *= 0.94; bp.vy *= 0.94;  /* 更快减速，避免飞太远 */
-      /* 淡入：前 18% 生命期 ramp 0→max，之后渐淡 */
-      var fadeIn = Math.min(bp.life / (bp.maxLife * 0.18), 1);
-      var fadeOut = Math.min(bp.life / bp.maxLife, 1);  /* 1→0 整体淡出 */
-      var alpha = fadeIn * fadeOut * 0.65;
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = bp.c;
-      ctx.shadowColor = bp.c; ctx.shadowBlur = 6;
-      ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.r * Math.min(fadeOut, 1), 0, 7); ctx.fill();
-      ctx.restore();
-      return true;
-    });
-
+    /* 五字原位错峰点亮（原位弹跳 + 从垫底透明度点亮，无飞行无粒子）*/
     FINAL_CHARS.forEach(function(ch, i){
-      var total = FINAL_CHARS.length;
-      /* 字间距：中间宽、两侧略窄（弧形排列）*/
-      var slotBase = minDim * 0.13;
-      var arcOffset = Math.sin((i/(total-1) - 0.5) * Math.PI) * minDim * 0.03;
-      var startX = cx - (total-1)*slotBase/2;
-      var targetX = startX + i*slotBase;
-      var targetY = cy - arcOffset;  /* 弧形：中间字略高 */
-      var targetZ = 0;  /* 不同字不同深度层次 */
-      if(i === 2) targetZ = -200;   /* 中间字「三」最靠前 */
-      else if(i === 0 || i === 4) targetZ = 300;  /* 两侧字靠后 */
-
+      var pos = charLayout(i, cx, cy, minDim);
       var delay = i * 0.12;
-      var local = Math.max(0, dt - delay);
-      var flyDur = 0.6;
-      var p = Math.min(local/flyDur, 1);
-      var e = 1 - Math.pow(1-p, 4);  /* 更快的 ease-out */
+      var popDur = 0.45;
+      var sincePop = Math.max(0, dt - delay);
+      var p = Math.min(sincePop/popDur, 1);
 
-      /* 从远处飞来，z 从 3000 → targetZ */
-      var fromZ = 3000;
-      var curZ = fromZ + (targetZ - fromZ) * e;
-      var s = P/(P - curZ);
-
-      /* 起点：从隧道方向（中心后方）飞出 */
-      var fromX = cx + (Math.random()-0.5)*0;  /* 确定性 */
-      var fromY = cy + (Math.random()-0.5)*0;
-      var x = fromX + (targetX - fromX) * e;
-      var y = fromY + (targetY - fromY) * e;
-
-      /* 字号层次：中间字最大 */
-      var sizeMult = (i === 2) ? 1.15 : (i === 1 || i === 3) ? 1.0 : 0.9;
-      var fs = minDim * 0.13 * sizeMult * (0.2 + 0.8*e) * s;
-
-      /* 到位检测 */
-      var arrived = (p >= 1);
-      var arrivalTime = delay + flyDur;
-      var sinceArrival = dt - arrivalTime;
-
-      /* 到位冲击波 */
-      if(arrived && sinceArrival >= 0 && sinceArrival < 0.6 && !ch._burst){
-        ch._burst = true;
-        /* 炸开粒子：更小更多更慢，柔和发散 */
-        for(var bi=0; bi<18; bi++){
-          var ang = (bi/18)*Math.PI*2 + Math.random()*0.4;
-          var spd = 1.2 + Math.random()*2.8;  /* 1.2-4.0，更慢 */
-          burstParticles.push({
-            x: targetX, y: targetY,
-            vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd,
-            r: 1.2 + Math.random()*1.8,  /* 更小 */
-            c: ch.glow,
-            life: 1.0 + Math.random()*0.6,  /* 1.0-1.6s 更长 */
-            maxLife: 1.0 + Math.random()*0.6  /* 记录初始生命值 */
-          });
-        }
+      /* scale 弹跳：0.6 → 过冲 1.16 → 回落 1.0 */
+      var scale;
+      if(p < 0.55){
+        var q1 = p/0.55;
+        scale = 0.6 + 0.56 * (1 - Math.pow(1-q1, 3));
+      } else {
+        var q2 = (p-0.55)/0.45;
+        scale = 1.16 - 0.16 * (q2*q2*(3-2*q2));
       }
 
-      /* 到位闪光帧（柔和渐入渐出高光）*/
-      var flashAlpha = 0;
-      if(arrived && sinceArrival >= 0 && sinceArrival < 0.25){
-        flashAlpha = Math.sin((sinceArrival/0.25) * Math.PI) * 0.5;  /* 正弦淡入淡出，峰值 0.5 */
-      }
+      /* 透明度：垫底 0.35 → 1 */
+      var alpha = 0.35 + 0.65 * p;
 
-      /* 拖尾光迹（飞入过程）*/
-      if(!arrived && p > 0.3){
-        ctx.save();
-        ctx.globalAlpha = (1-p)*0.3;
-        ctx.strokeStyle = ch.glow; ctx.lineWidth = 3;
-        ctx.shadowColor = ch.glow; ctx.shadowBlur = 15;
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(x, y);
-        ctx.stroke();
-        ctx.restore();
-      }
+      /* 光晕：点亮瞬间强脉冲，之后柔和呼吸 */
+      var glowBlur = 18 + Math.max(0, 0.45 - sincePop) * 80 + Math.sin(t*3 + i)*4;
 
-      /* 多层发光晕（到位后呼吸）*/
-      if(arrived){
-        var breath = 1 + Math.sin(sinceArrival*8)*0.05;
-        for(var ring=3; ring>=1; ring--){
-          ctx.save();
-          ctx.globalAlpha = 0.12 * (4-ring) / 3;
-          ctx.fillStyle = ch.glow;
-          ctx.shadowColor = ch.glow; ctx.shadowBlur = 50 * ring * breath;
-          ctx.font = 'bold '+fs+'px "Microsoft YaHei","PingFang SC","SimHei",sans-serif';
-          ctx.textAlign='center'; ctx.textBaseline='middle';
-          ctx.fillText(ch.t, targetX, targetY);
-          ctx.restore();
-        }
-      }
+      var fs = minDim * 0.13 * pos.sizeMult * scale;
 
-      /* 主文字 */
       ctx.save();
-      ctx.globalAlpha = Math.min(e, 1);
-      ctx.translate(x, y);
-      ctx.fillStyle = ch.c;
-      ctx.shadowColor = ch.glow;
-      ctx.shadowBlur = arrived ? 30 : 20*e;
-      ctx.font = 'bold '+fs+'px "Microsoft YaHei","PingFang SC","SimHei",sans-serif';
+      ctx.font = 'bold '+fs+'px '+FONT;
       ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(ch.t, 0, 0);
+      /* 外层光晕 */
+      ctx.globalAlpha = alpha * 0.35;
+      ctx.fillStyle = ch.glow;
+      ctx.shadowColor = ch.glow; ctx.shadowBlur = glowBlur;
+      ctx.fillText(ch.t, pos.x, pos.y);
+      /* 主文字 */
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = ch.c;
+      ctx.shadowBlur = glowBlur * 0.5;
+      ctx.fillText(ch.t, pos.x, pos.y);
       /* 白色内核 */
-      ctx.globalAlpha = Math.min(e, 1) * 0.6;
+      ctx.globalAlpha = alpha * 0.55;
       ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = ch.c; ctx.shadowBlur = 12;
-      ctx.fillText(ch.t, 0, 0);
+      ctx.shadowColor = ch.c; ctx.shadowBlur = 10;
+      ctx.fillText(ch.t, pos.x, pos.y);
       ctx.restore();
-
-      /* 到位闪光（白色高光叠加）*/
-      if(flashAlpha > 0){
-        ctx.save();
-        ctx.globalAlpha = flashAlpha;
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = ch.glow; ctx.shadowBlur = 60;
-        ctx.font = 'bold '+fs*1.1+'px "Microsoft YaHei","PingFang SC","SimHei",sans-serif';
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText(ch.t, targetX, targetY);
-        ctx.restore();
-      }
     });
 
-    /* 全部到位后的爆发效果 */
-    var allArrived = dt > (0.12*4 + 0.6);
+    /* 全部点亮后：冲击波环 + 双副标题 */
+    var allArrived = dt > (0.12*4 + 0.45);
     if(allArrived){
-      var sinceAll = dt - (0.12*4 + 0.6);
+      var sinceAll = dt - (0.12*4 + 0.45);
 
-      /* 中心爆炸光环（多环冲击波）*/
+      /* 冲击波光环（多环，随节奏扩散）*/
       for(var er=0; er<4; er++){
         var ep = (sinceAll + er*0.15) % 1.0;
         var eRadius = ep * minDim * 0.5;
@@ -493,18 +428,8 @@ canvas{display:block;position:absolute;top:0;left:0}
     }
   }
 
-  function tunnelAngle(t){ return Math.sin(t*2*Math.PI)*2.5; }
-
-  /* 重置 burst 标志（每轮循环开始时）*/
-  function resetBurst(){
-    FINAL_CHARS.forEach(function(ch){ ch._burst = false; });
-    burstParticles = [];
-  }
-
   /* ----- 主循环 ----- */
-  var LAST_HIT = null;
   var FINAL_DURATION = 2.5;
-  var lastT = performance.now();
   var startGlobal = performance.now()/1000;
 
   function loop(now){
@@ -512,16 +437,13 @@ canvas{display:block;position:absolute;top:0;left:0}
     var cycleT = t % (DUR + FINAL_DURATION);  /* 6秒隧道 + 2.5秒汇聚 */
 
     if(cycleT < DUR){
-      /* 隧道阶段 */
+      /* 隧道阶段：五字常驻中央半透明垫底 + 呼吸 */
       frame(cycleT);
+      drawCenterTitle(0.32 + Math.sin(cycleT/1.5 * 2*Math.PI)*0.06);
     } else {
-      /* 汇聚阶段 */
+      /* 汇聚阶段：五字原位错峰点亮 */
       var ft = cycleT - DUR;
       drawFinalGather(t, t - ft);
-      if(ft > FINAL_DURATION){
-        resetBurst();
-        startGlobal = now/1000;  /* 重新开始 */
-      }
     }
 
     requestAnimationFrame(loop);
