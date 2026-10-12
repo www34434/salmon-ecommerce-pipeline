@@ -2,52 +2,276 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>三文鱼飞字 · 深海三文鱼</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>深海三文鱼 · Flying Words Tunnel</title>
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  html,body{width:100%;height:100%;overflow:hidden;background:#060812}
-  canvas{display:block;position:absolute;top:0;left:0}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#060812}
+canvas{display:block;position:absolute;top:0;left:0}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <script>
-/* 三文鱼飞字动画 v2 · 词语汇集组合
-   Phase 1: 散词从四面飞入→短暂停留→飞出（快速循环）
-   Phase 2: 5个字"深""海""三""文""鱼"从不同方向飞向中心组合 */
+/* ================================================================
+   Flying Words Tunnel — 深海三文鱼主题
+   按 spec card: 22词黄金角铺位 + z轴透视推进 + 生命曲线 + 擦身而过
+   6秒2循环无缝 → 最后汇聚"深海三文鱼"
+   ================================================================ */
 (function(){
   var cv = document.getElementById('c');
   var ctx = cv.getContext('2d');
-  var W, H;
-  function resize(){ W = cv.width = window.innerWidth; H = cv.height = window.innerHeight; }
-  resize();
-  window.addEventListener('resize', resize);
+  var W,H,P;
+  function resize(){
+    W = cv.width = window.innerWidth;
+    H = cv.height = window.innerHeight;
+    P = 4400;  /* perspective 原生值 */
+  }
+  resize(); window.addEventListener('resize', resize);
 
-  /* 三文鱼主题散词 */
+  /* ----- 三文鱼主题 22 词（4-7字，适配中文字宽 ----- */
   var WORDS = [
-    {t:'烟台虹鳟',c:'#4d8dff'},
-    {t:'刺身级',c:'#ff7a3c'},
-    {t:'从头吃到尾',c:'#6db5ff'},
-    {t:'清爽美味',c:'#059669'},
-    {t:'低卡美食',c:'#a8d4ff'},
-    {t:'Omega-3',c:'#ffb26a'},
-    {t:'高蛋白',c:'#ff5d5d'},
-    {t:'冰鲜直送',c:'#8bc4ff'},
-    {t:'液氮急冻',c:'#4d8dff'},
-    {t:'冷链直达',c:'#059669'},
-    {t:'鲜切现做',c:'#ff7a3c'},
-    {t:'溯源可查',c:'#a8d4ff'},
-    {t:'一口深海',c:'#6db5ff'},
-    {t:'黄海冷水团',c:'#4d8dff'},
-    {t:'北纬37°',c:'#ffb26a'},
-    {t:'烟台深海',c:'#4d8dff'},
-    {t:'虹鳟刺身',c:'#ff7a3c'},
-    {t:'鱼油精华',c:'#6db5ff'},
+    '烟台虹鳟','刺身级新鲜','从头吃到尾','清爽美味','低卡美食',
+    'Omega-3富含','高蛋白','冰鲜直送','液氮急冻','冷链直达',
+    '鲜切现做','溯源可查','一口深海','黄海冷水团','北纬37度',
+    '三文鱼','深海鱼','虹鳟鱼','鱼油精华','肉质细嫩',
+    '入口即化','鲜美多汁'
   ];
+  var EMPHASIS = [2,8,14,20];  /* 电光蓝强调词索引 */
+  var COLORS = {
+    light:  ['#f2f5ff','#c3cbe2','#8a95b5'],
+    emp:    '#86a8ff',
+    empGlow:'rgba(134,168,255,'
+  };
 
-  /* 最终组合字 */
-  var FINAL = [
+  /* ----- 确定性伪随机 ----- */
+  function rand(i){
+    var x = Math.sin((i*9301+49297)*0.0001)*233280;
+    return x - Math.floor(x);
+  }
+
+  /* ----- 词对象 ----- */
+  var N = WORDS.length;
+  var CYCLIC = 2;  /* 整数圈无缝循环 */
+  var DUR = 6.0;   /* 秒 */
+
+  var items = [];
+  for(var i=0; i<N; i++){
+    var a = i*2.39996 + rand(i*7+1)*0.8;     /* 黄金角 */
+    var r = 330 + rand(i)*660;                 /* 半径 */
+    items.push({
+      text: WORDS[i],
+      emphasis: EMPHASIS.indexOf(i)>=0,
+      angle: a, r: r,
+      yScale: 0.6,
+      spawnZ: -7000, endZ: 3200,
+      phase: i/N,                              /* 均分相位 */
+      fontSize: 64 + rand(i+100)*56,          /* 64-120px */
+      baseAlpha: 1.0
+    });
+  }
+
+  /* ----- 生命曲线插值 ----- */
+  var OT = [0, 0.25, 0.6, 0.85, 1];
+  var OP = [0, 1, 0.5, 0.2, 0];
+  function life(u){
+    if(u<=0) return 0;
+    if(u>=1) return 0;
+    for(var k=0; k<4; k++){
+      if(u>=OT[k] && u<=OT[k+1]){
+        var p = (u-OT[k])/(OT[k+1]-OT[k]);
+        return OP[k] + (OP[k+1]-OP[k])*p;
+      }
+    }
+    return 0;
+  }
+
+  /* ----- 隧道壁发丝环 ----- */
+  var hairRings = [];
+  for(var k=0; k<10; k++){
+    hairRings.push({
+      baseR: 330 + k*66,
+      phase: k/10,
+      thickness: 1 + k*0.4
+    });
+  }
+
+  /* ----- 尘埃流线 ----- */
+  var dust = [];
+  for(var d=0; d<56; d++){
+    dust.push({
+      angle: d*0.4 + rand(d*3)*0.6,
+      r: 100 + rand(d+50)*800,
+      zPhase: rand(d+200),
+      speed: 0.8 + rand(d+300)*0.6,
+      len: 40 + rand(d+400)*80
+    });
+  }
+
+  /* ----- 中心光晕 ----- */
+  function drawHalo(t){
+    var pulse = 0.82 + Math.sin(t*4*Math.PI)*0.14;  /* 呼吸2次/6秒 */
+    var cx = W/2, cy = H/2;
+    var g = ctx.createRadialGradient(cx,cy,0, cx,cy, Math.min(W,H)*0.55);
+    g.addColorStop(0, 'rgba(134,168,255,'+(0.28*pulse)+')');
+    g.addColorStop(0.25, 'rgba(77,141,255,'+(0.12*pulse)+')');
+    g.addColorStop(0.6, 'rgba(15,25,60,0.08)');
+    g.addColorStop(1, 'rgba(6,8,18,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  /* ----- 暗角 ----- */
+  function drawVignette(){
+    var cx = W/2, cy = H/2;
+    var g = ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.25, cx,cy,Math.max(W,H)*0.7);
+    g.addColorStop(0, 'rgba(6,8,18,0)');
+    g.addColorStop(1, 'rgba(3,5,14,0.92)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0,0,W,H);
+  }
+
+  /* ----- 渲染一帧 ----- */
+  function frame(t){
+    var cx = W/2, cy = H/2;
+    var DPR = Math.min(window.devicePixelRatio||1, 2);
+
+    ctx.fillStyle = '#060812';
+    ctx.fillRect(0,0,W,H);
+
+    /* 隧道整体极缓滚转 ±2.5度 */
+    var tunnelRot = Math.sin(t*2*Math.PI) * 2.5 * Math.PI/180;
+    var cosR = Math.cos(tunnelRot), sinR = Math.sin(tunnelRot);
+
+    /* --- 尘埃流线 --- */
+    dust.forEach(function(d){
+      var dz = ((t*0.15*d.speed + d.zPhase) % 1);
+      /* dz: 0远→1近 */
+      var z = -7000 + dz*10200;
+      if(z < -6800 || z > 3000) return;
+      var s = P/(P-z);
+      var drift = 0.5 + dz*1.35;
+      var rx = d.r * drift * Math.cos(d.angle);
+      var ry = d.r * drift * Math.sin(d.angle) * 0.6;
+      var px = cx + rx * s;
+      var py = cy + ry * s;
+      /* 方向拖尾：沿 -v 方向延长 */
+      var vx = rx*s*0.02, vy = ry*s*0.02;
+      ctx.save();
+      ctx.globalAlpha = life(dz)*0.4;
+      ctx.strokeStyle = '#86a8ff';
+      ctx.lineWidth = Math.max(0.5, s*1.5);
+      ctx.beginPath();
+      ctx.moveTo(px-vx*d.len, py-vy*d.len);
+      ctx.lineTo(px, py);
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    /* --- 隧道壁发丝环 --- */
+    hairRings.forEach(function(hr){
+      var hz = ((t/DUR*CYCLIC + hr.phase) % 1);
+      var z = -7000 + hz*10200;
+      if(z < -6800 || z > 3000) return;
+      var s = P/(P-z);
+      var drift = 0.5 + hz*1.35;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(tunnelRot);
+      ctx.globalAlpha = life(hz)*0.35;
+      ctx.strokeStyle = '#4d8dff';
+      ctx.lineWidth = Math.max(0.3, hr.thickness * s * 0.6);
+      ctx.beginPath();
+      /* 扁椭圆 */
+      for(var a=0; a<Math.PI*2; a+=0.12){
+        var ex = hr.baseR*drift*Math.cos(a) * s;
+        var ey = hr.baseR*drift*Math.sin(a)*0.6 * s;
+        if(a===0) ctx.moveTo(ex,ey); else ctx.lineTo(ex,ey);
+      }
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    /* --- 中心光晕 --- */
+    drawHalo(t);
+
+    /* --- 词语 --- */
+    items.forEach(function(it){
+      /* 时间推进：每个词按自己的 phase 起始，整圈重复 */
+      var rawT = (t/DUR*CYCLIC + it.phase) % 1;
+      var u = rawT;  /* 0远→1近 */
+
+      var z = it.spawnZ + u*(it.endZ - it.spawnZ);
+      var s = P/(P-z);
+      var drift = 0.5 + u*1.35;
+
+      var rx = it.r * drift * Math.cos(it.angle);
+      var ry = it.r * drift * Math.sin(it.angle) * it.yScale;
+      /* 隧道滚转 */
+      var rx2 = rx*cosR - ry*sinR;
+      var ry2 = rx*sinR + ry*cosR;
+
+      var px = cx + rx2 * s;
+      var py = cy + ry2 * s;
+
+      /* 生命曲线 */
+      var op = life(u);
+
+      /* 近端糊化：u>0.86 起线性失焦 */
+      var blur = 0;
+      if(u > 0.86) blur = (u-0.86) * 40;
+      else if(u < 0.22) blur = (0.22-u) * 12;
+
+      /* 字号 */
+      var fs = it.fontSize * s;
+
+      /* 颜色 */
+      var col;
+      if(it.emphasis){
+        col = COLORS.emp;
+      } else {
+        var ci = Math.min(2, Math.floor(u*3));
+        col = COLORS.light[ci];
+      }
+
+      /* 方向拖尾（高速运动残影）*/
+      if(u > 0.7 && u < 1 && s > 1.2){
+        var tx = rx2*s*0.04, ty = ry2*s*0.04;
+        ctx.save();
+        for(var g=6; g>=1; g--){
+          ctx.globalAlpha = op * 0.12 * (6-g+1)/6;
+          ctx.font = '700 '+fs+'px "Microsoft YaHei","SimHei",sans-serif';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillStyle = col;
+          ctx.fillText(it.text, px-tx*g, py-ty*g);
+        }
+        ctx.restore();
+      }
+
+      /* 主文字 */
+      ctx.save();
+      ctx.globalAlpha = op;
+      if(blur > 0){
+        ctx.filter = 'blur('+blur.toFixed(1)+'px)';
+      }
+      ctx.font = '700 '+fs+'px "Microsoft YaHei","SimHei",sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      /* 发光 */
+      ctx.shadowColor = col;
+      ctx.shadowBlur = it.emphasis ? 20 : 8;
+      ctx.fillStyle = col;
+      ctx.fillText(it.text, px, py);
+      ctx.restore();
+    });
+
+    /* --- 暗角 --- */
+    drawVignette();
+  }
+
+  /* =============================================================
+     最后 0.5 秒：5 字从隧道中心汇聚成「深海三文鱼」
+     ============================================================= */
+  var FINAL_CHARS = [
     {t:'深', c:'#4d8dff'},
     {t:'海', c:'#6db5ff'},
     {t:'三', c:'#ff7a3c'},
@@ -55,255 +279,102 @@
     {t:'鱼', c:'#a8d4ff'},
   ];
 
-  /* 背景粒子 */
-  var particles = [];
-  for(var i=0; i<60; i++){
-    particles.push({
-      x: Math.random()*W, y: Math.random()*H,
-      vx: (Math.random()-0.5)*0.4, vy: (Math.random()-0.5)*0.4,
-      r: 0.5+Math.random()*2, a: 0.1+Math.random()*0.3,
-      c: ['#4d8dff','#6db5ff','#ff7a3c','#a8d4ff'][Math.floor(Math.random()*4)]
-    });
-  }
-
-  /* 状态机：散词循环 8 个 → 汇集组合 */
-  var phase = 'scatter_in';   // scatter_in → scatter_hold → scatter_out → gather → final_glow → loop
-  var scatterCount = 0;
-  var MAX_SCATTER = 5;
-  var scatterIdx = 0;
-  var currentWord = null;
-  var phaseT = 0;
-  var IN_DUR = 0.35, HOLD_DUR = 0.7, OUT_DUR = 0.25;
-
-  /* 组合字状态 */
-  var gatherChars = [];
-  function initGather(){
-    gatherChars = FINAL.map(function(ch, i){
-      var total = FINAL.length;
-      var slotW = Math.min(W*0.13, 120);
-      var startX = W/2 - (total-1)*slotW/2;
-      return {
-        text: ch.t, color: ch.c,
-        targetX: startX + i*slotW,
-        targetY: H/2,
-        startX: Math.random()*W,
-        startY: Math.random()*H,
-        x: 0, y: 0,
-        scale: 0.2, alpha: 0,
-        delay: i * 0.12,
-        arrived: false
-      };
-    });
-  }
-
-  function nextScatter(){
-    currentWord = WORDS[scatterIdx % WORDS.length];
-    scatterIdx++;
-    currentWord.dir = Math.floor(Math.random()*4);
-    currentWord.rot = (Math.random()-0.5)*0.6;
-    phase = 'scatter_in';
-    phaseT = 0;
-  }
-  nextScatter();
-
-  function drawBg(){
-    var g = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*0.7);
-    g.addColorStop(0, '#0a1024'); g.addColorStop(1, '#060812');
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-  }
-
-  function drawParticles(){
-    particles.forEach(function(p){
-      p.x += p.vx; p.y += p.vy;
-      if(p.x<0) p.x=W; if(p.x>W) p.x=0;
-      if(p.y<0) p.y=H; if(p.y>H) p.y=0;
-      ctx.fillStyle = p.c; ctx.globalAlpha = p.a;
-      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-  }
-
-  /* 散词绘制 */
-  function drawScatterWord(dt){
-    if(!currentWord) return;
-    phaseT += dt;
+  function drawFinalGather(t, tStart){
+    var dt = t - tStart;
+    if(dt < 0 || dt > 2.0) return;
     var cx = W/2, cy = H/2;
-    var scale, alpha, ox=0, oy=0, rot=0;
 
-    if(phase === 'scatter_in'){
-      var p = Math.min(phaseT/IN_DUR, 1);
+    /* 隧道淡出 */
+    frame(t - dt*0.5);
+
+    FINAL_CHARS.forEach(function(ch, i){
+      var slotW = Math.min(W*0.12, 110);
+      var total = FINAL_CHARS.length;
+      var startX = cx - (total-1)*slotW/2;
+      var targetX = startX + i*slotW;
+      var targetY = cy;
+
+      var delay = i * 0.15;
+      var local = Math.max(0, dt - delay);
+      var p = Math.min(local/0.8, 1);
       var e = 1 - Math.pow(1-p, 3);
-      scale = 0.3 + 0.7*e; alpha = e;
-      var dist = (1-e)*350;
-      if(currentWord.dir===0){ox=-dist;rot=-0.3*(1-e);}
-      else if(currentWord.dir===1){ox=dist;rot=0.3*(1-e);}
-      else if(currentWord.dir===2){oy=-dist;rot=0.2*(1-e);}
-      else {oy=dist;rot=-0.2*(1-e);}
-      if(p>=1){ phase='scatter_hold'; phaseT=0; }
-    } else if(phase === 'scatter_hold'){
-      var p2 = Math.min(phaseT/HOLD_DUR, 1);
-      scale = 1.0 + Math.sin(p2*Math.PI)*0.015;
-      alpha = 1.0;
-      if(p2>=1){ phase='scatter_out'; phaseT=0; }
-    } else {
-      var p3 = Math.min(phaseT/OUT_DUR, 1);
-      var e3 = p3*p3;
-      scale = 1.0 - e3*0.3; alpha = 1.0 - e3;
-      var d2 = e3*180;
-      if(currentWord.dir===0) ox=d2;
-      else if(currentWord.dir===1) ox=-d2;
-      else if(currentWord.dir===2) oy=d2;
-      else oy=-d2;
-      if(p3>=1){
-        scatterCount++;
-        if(scatterCount >= MAX_SCATTER){
-          phase = 'gather';
-          phaseT = 0;
-          initGather();
-          currentWord = null;
-          return;
-        }
-        nextScatter();
-        return;
-      }
-    }
 
-    ctx.save();
-    ctx.translate(cx+ox, cy+oy);
-    ctx.scale(scale, scale);
-    ctx.rotate(rot + currentWord.rot*(phase==='scatter_in'?(1-Math.min(phaseT/IN_DUR,1)):0));
-    var fs = Math.min(W,H)*0.08;
-    ctx.font = 'bold '+fs+'px "Microsoft YaHei","PingFang SC","SimHei",sans-serif';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.globalAlpha = alpha*0.3; ctx.fillStyle=currentWord.c;
-    ctx.shadowColor=currentWord.c; ctx.shadowBlur=35; ctx.fillText(currentWord.t,0,0);
-    ctx.globalAlpha = alpha*0.6; ctx.shadowBlur=18; ctx.fillText(currentWord.t,0,0);
-    ctx.globalAlpha = alpha; ctx.fillStyle='#fff';
-    ctx.shadowColor=currentWord.c; ctx.shadowBlur=8; ctx.fillText(currentWord.t,0,0);
-    ctx.restore();
-  }
+      /* 从远处（和隧道同方向）飞近 */
+      var fromZ = 2800;
+      var curZ = fromZ * (1-e);
+      var s = P/(P - curZ);
 
-  /* 组合字绘制 */
-  function drawGather(dt){
-    phaseT += dt;
-    var allArrived = true;
-    gatherChars.forEach(function(ch){
-      var localT = Math.max(0, phaseT - ch.delay);
-      var p = Math.min(localT/0.8, 1);
-      var e = 1 - Math.pow(1-p, 3);
-      ch.x = ch.startX + (ch.targetX - ch.startX)*e;
-      ch.y = ch.startY + (ch.targetY - ch.startY)*e;
-      ch.scale = 0.2 + 0.8*e;
-      ch.alpha = e;
-      if(p < 1) allArrived = false;
+      var x = targetX + (cx - 200*Math.cos(tunnelAngle(t)*Math.PI/180) - targetX) * (1-e);
+      var y = targetY + (cy - 150*Math.sin(tunnelAngle(t)*Math.PI/180) - targetY) * (1-e);
+      x = cx + (targetX - cx)*e;
+      y = cy + (targetY - cy)*e;
 
-      /* 拖尾光迹 */
-      if(p < 0.95){
-        ctx.save();
-        ctx.globalAlpha = (1-p)*0.3;
-        ctx.strokeStyle = ch.color; ctx.lineWidth = 2;
-        ctx.shadowColor = ch.color; ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.moveTo(ch.startX, ch.startY);
-        ctx.lineTo(ch.x, ch.y);
-        ctx.stroke();
-        ctx.restore();
-      }
-    });
+      var fs = Math.min(W,H)*0.12 * (0.3 + 0.7*e);
 
-    /* 绘制字 */
-    gatherChars.forEach(function(ch){
       ctx.save();
-      ctx.translate(ch.x, ch.y);
-      ctx.scale(ch.scale, ch.scale);
-      var fs = Math.min(W,H)*0.12;
+      ctx.globalAlpha = e;
+      ctx.translate(x, y);
+      ctx.fillStyle = ch.c;
+      ctx.shadowColor = ch.c; ctx.shadowBlur = 40*e;
       ctx.font = 'bold '+fs+'px "Microsoft YaHei","PingFang SC","SimHei",sans-serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.globalAlpha = ch.alpha*0.25; ctx.fillStyle=ch.color;
-      ctx.shadowColor=ch.color; ctx.shadowBlur=45; ctx.fillText(ch.text,0,0);
-      ctx.globalAlpha = ch.alpha*0.5; ctx.shadowBlur=25; ctx.fillText(ch.text,0,0);
-      ctx.globalAlpha = ch.alpha; ctx.fillStyle='#fff';
-      ctx.shadowColor=ch.color; ctx.shadowBlur=12; ctx.fillText(ch.text,0,0);
-      ctx.restore();
-    });
-
-    /* 全部到位 → 最终闪光 */
-    if(allArrived && phase === 'gather'){
-      phase = 'final_glow';
-      phaseT = 0;
-    }
-  }
-
-  function drawFinalGlow(dt){
-    phaseT += dt;
-    /* 继续画组合字（稳定）*/
-    gatherChars.forEach(function(ch){
-      ctx.save();
-      ctx.translate(ch.targetX, ch.targetY);
-      var pulse = 1.0 + Math.sin(phaseT*4)*0.03;
-      ctx.scale(pulse, pulse);
-      var fs = Math.min(W,H)*0.12;
-      ctx.font = 'bold '+fs+'px "Microsoft YaHei","PingFang SC","SimHei",sans-serif';
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      /* 脉冲发光增强 */
-      var glowMult = 1 + Math.sin(phaseT*3)*0.3;
-      ctx.globalAlpha = 0.25*glowMult; ctx.fillStyle=ch.color;
-      ctx.shadowColor=ch.color; ctx.shadowBlur=55*glowMult; ctx.fillText(ch.text,0,0);
-      ctx.globalAlpha = 0.5*glowMult; ctx.shadowBlur=28*glowMult; ctx.fillText(ch.text,0,0);
-      ctx.globalAlpha = 1; ctx.fillStyle='#fff';
-      ctx.shadowColor=ch.color; ctx.shadowBlur=14*glowMult; ctx.fillText(ch.text,0,0);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(ch.t, 0, 0);
+      ctx.globalAlpha = e*0.5; ctx.fillStyle = '#fff';
+      ctx.shadowBlur = 18*e;
+      ctx.fillText(ch.t, 0, 0);
       ctx.restore();
     });
 
     /* 底部标语 */
-    ctx.save();
-    var subFs = Math.min(W,H)*0.035;
-    ctx.font = subFs+'px Arial,sans-serif';
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillStyle = '#4d8dff';
-    ctx.globalAlpha = Math.min(phaseT*2, 0.8);
-    ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 15;
-    ctx.fillText('D E E P   S E A   S A L M O N', W/2, H/2 + Math.min(W,H)*0.1);
-    ctx.restore();
+    if(dt > 1.0){
+      var subP = Math.min((dt-1.0)/0.5, 1);
+      ctx.save();
+      ctx.globalAlpha = subP*0.8;
+      ctx.font = Math.min(W,H)*0.028+'px Arial,sans-serif';
+      ctx.fillStyle = '#4d8dff';
+      ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 12;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('D E E P   S E A   S A L M O N', cx, cy + Math.min(W,H)*0.1);
+      ctx.restore();
+    }
 
-    /* 扩散光环 */
-    if(phaseT > 0.3){
-      var ringP = (phaseT - 0.3) % 1.5;
-      for(var ri=0; ri<3; ri++){
-        var rp = (ringP + ri*0.5) % 1.5;
-        var r = rp * Math.min(W,H)*0.35;
+    /* 光环 */
+    if(dt > 1.2){
+      for(var r=0; r<3; r++){
+        var rp = (dt-1.2 + r*0.4) % 1.2;
+        var radius = rp * Math.min(W,H)*0.4;
         ctx.save();
-        ctx.globalAlpha = (1 - rp/1.5)*0.2;
+        ctx.globalAlpha = (1 - rp/1.2)*0.18;
         ctx.strokeStyle = '#4d8dff'; ctx.lineWidth = 2;
-        ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 15;
-        ctx.beginPath(); ctx.arc(W/2, H/2, r, 0, 7); ctx.stroke();
+        ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 10;
+        ctx.beginPath(); ctx.arc(cx, cy, radius, 0, 7); ctx.stroke();
         ctx.restore();
       }
     }
-
-    /* 4秒后回到散词循环 */
-    if(phaseT > 4.0){
-      scatterCount = 0;
-      phase = 'scatter_in';
-      phaseT = 0;
-      nextScatter();
-    }
   }
 
+  function tunnelAngle(t){ return Math.sin(t*2*Math.PI)*2.5; }
+
+  /* ----- 主循环 ----- */
+  var LAST_HIT = null;
+  var FINAL_DURATION = 2.5;
   var lastT = performance.now();
+  var startGlobal = performance.now()/1000;
+
   function loop(now){
-    var dt = (now - lastT)/1000;
-    lastT = now;
+    var t = (now/1000 - startGlobal);
+    var cycleT = t % (DUR + FINAL_DURATION);  /* 6秒隧道 + 2.5秒汇聚 */
 
-    drawBg();
-    drawParticles();
-
-    if(phase === 'scatter_in' || phase === 'scatter_hold' || phase === 'scatter_out'){
-      drawScatterWord(dt);
-    } else if(phase === 'gather'){
-      drawGather(dt);
-    } else if(phase === 'final_glow'){
-      drawFinalGlow(dt);
+    if(cycleT < DUR){
+      /* 隧道阶段 */
+      frame(cycleT);
+    } else {
+      /* 汇聚阶段 */
+      var ft = cycleT - DUR;
+      drawFinalGather(t, t - ft);
+      if(ft > FINAL_DURATION){
+        startGlobal = now/1000;  /* 重新开始 */
+      }
     }
 
     requestAnimationFrame(loop);
