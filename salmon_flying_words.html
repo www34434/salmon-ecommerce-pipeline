@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三文鱼飞字 · Salmon Flying Words</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:100%;height:100%;overflow:hidden;background:#060812}
+  canvas{display:block;position:absolute;top:0;left:0}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+/* 三文鱼飞字动画 · 霓虹深空风格
+   词组从随机方向飞入→停留中心→淡出→下一组
+   背景粒子+光效流动 */
+(function(){
+  var cv = document.getElementById('c');
+  var ctx = cv.getContext('2d');
+  var W, H;
+  function resize(){
+    W = cv.width = window.innerWidth;
+    H = cv.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  /* 三文鱼主题词组 */
+  var WORDS = [
+    {text:'烟台深海虹鳟', color:'#4d8dff', sub:'Yantai Rainbow Trout'},
+    {text:'刺身级新鲜', color:'#ff7a3c', sub:'Sashimi Grade Fresh'},
+    {text:'从头吃到尾', color:'#6db5ff', sub:'Head to Tail'},
+    {text:'清爽美味', color:'#059669', sub:'Clean & Delicious'},
+    {text:'低卡美食', color:'#a8d4ff', sub:'Low Calorie'},
+    {text:'Omega-3 富含', color:'#ffb26a', sub:'Rich in Omega-3'},
+    {text:'高蛋白', color:'#ff5d5d', sub:'High Protein'},
+    {text:'冰鲜直送', color:'#8bc4ff', sub:'Fresh Cold Chain'},
+    {text:'液氮急冻 -196℃', color:'#4d8dff', sub:'Flash Frozen'},
+    {text:'冷链直达', color:'#059669', sub:'Cold Chain Direct'},
+    {text:'鲜切现做', color:'#ff7a3c', sub:'Fresh Cut'},
+    {text:'溯源可查', color:'#a8d4ff', sub:'Traceable Origin'},
+    {text:'一口深海', color:'#6db5ff', sub:'Taste the Deep Sea'},
+    {text:'黄海冷水团', color:'#4d8dff', sub:'Yellow Sea Cold Water'},
+    {text:'北纬37°', color:'#ffb26a', sub:'37°N Latitude'},
+    {text:'三文鱼鲜切店', color:'#ff7a3c', sub:'Salmon Fresh Cut Shop'},
+  ];
+
+  /* 背景粒子 */
+  var particles = [];
+  for(var i=0; i<80; i++){
+    particles.push({
+      x: Math.random()*W,
+      y: Math.random()*H,
+      vx: (Math.random()-0.5)*0.3,
+      vy: (Math.random()-0.5)*0.3,
+      r: 0.5 + Math.random()*2,
+      a: 0.1 + Math.random()*0.3,
+      c: ['#4d8dff','#6db5ff','#ff7a3c','#a8d4ff'][Math.floor(Math.random()*4)]
+    });
+  }
+
+  /* 飞字状态机 */
+  var idx = 0;
+  var phase = 'in';  // in → hold → out
+  var phaseTime = 0;
+  var current = null;
+  var IN_DUR = 0.6, HOLD_DUR = 1.4, OUT_DUR = 0.5;
+  var t0 = performance.now();
+
+  function nextWord(){
+    current = WORDS[idx % WORDS.length];
+    idx++;
+    phase = 'in';
+    phaseTime = 0;
+    current.angle = (Math.random()-0.5) * 0.8;       // 飞入旋转
+    current.dir = Math.floor(Math.random()*4);         // 0左 1右 2上 3下
+    current.startScale = 0.3;
+  }
+  nextWord();
+
+  function drawParticles(dt){
+    particles.forEach(function(p){
+      p.x += p.vx; p.y += p.vy;
+      if(p.x < 0) p.x = W; if(p.x > W) p.x = 0;
+      if(p.y < 0) p.y = H; if(p.y > H) p.y = 0;
+      ctx.fillStyle = p.c;
+      ctx.globalAlpha = p.a;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+  }
+
+  function drawBg(){
+    var g = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*0.7);
+    g.addColorStop(0, '#0a1024');
+    g.addColorStop(1, '#060812');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  function drawWord(t){
+    if(!current) return;
+    var cx = W/2, cy = H/2;
+    var progress, scale, alpha, ox = 0, oy = 0, rot = 0;
+
+    if(phase === 'in'){
+      progress = Math.min(phaseTime / IN_DUR, 1);
+      var e = 1 - Math.pow(1 - progress, 3);  // ease-out cubic
+      scale = current.startScale + (1.0 - current.startScale) * e;
+      alpha = e;
+      var dist = (1 - e) * 400;
+      if(current.dir === 0){ ox = -dist; rot = -0.3*(1-e); }
+      else if(current.dir === 1){ ox = dist; rot = 0.3*(1-e); }
+      else if(current.dir === 2){ oy = -dist; rot = 0.2*(1-e); }
+      else { oy = dist; rot = -0.2*(1-e); }
+      if(progress >= 1){ phase = 'hold'; phaseTime = 0; }
+    } else if(phase === 'hold'){
+      progress = Math.min(phaseTime / HOLD_DUR, 1);
+      scale = 1.0 + Math.sin(progress * Math.PI * 2) * 0.02;
+      alpha = 1.0;
+      if(progress >= 1){ phase = 'out'; phaseTime = 0; }
+    } else {
+      progress = Math.min(phaseTime / OUT_DUR, 1);
+      var e2 = progress * progress;
+      scale = 1.0 - e2 * 0.3;
+      alpha = 1.0 - e2;
+      var dist2 = e2 * 200;
+      if(current.dir === 0){ ox = dist2; }
+      else if(current.dir === 1){ ox = -dist2; }
+      else if(current.dir === 2){ oy = dist2; }
+      else { oy = -dist2; }
+      if(progress >= 1){ nextWord(); }
+    }
+
+    ctx.save();
+    ctx.translate(cx + ox, cy + oy);
+    ctx.scale(scale, scale);
+    ctx.rotate(rot + current.angle * (phase === 'in' ? (1 - progress) : 0));
+
+    /* 主文字（中文）*/
+    var fontSize = Math.min(W, H) * 0.09;
+    ctx.font = 'bold ' + fontSize + 'px "Microsoft YaHei","PingFang SC","SimHei",sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    /* 多层发光 */
+    ctx.globalAlpha = alpha * 0.3;
+    ctx.fillStyle = current.color;
+    ctx.shadowColor = current.color; ctx.shadowBlur = 40;
+    ctx.fillText(current.text, 0, 0);
+
+    ctx.globalAlpha = alpha * 0.6;
+    ctx.shadowBlur = 20;
+    ctx.fillText(current.text, 0, 0);
+
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#ffffff';
+    ctx.shadowColor = current.color; ctx.shadowBlur = 10;
+    ctx.fillText(current.text, 0, 0);
+
+    /* 副标题（英文）*/
+    var subSize = fontSize * 0.32;
+    ctx.font = subSize + 'px Arial, sans-serif';
+    ctx.fillStyle = current.color;
+    ctx.globalAlpha = alpha * 0.7;
+    ctx.shadowColor = current.color; ctx.shadowBlur = 15;
+    ctx.fillText(current.sub, 0, fontSize * 0.7);
+
+    /* 装饰横线 */
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = current.color;
+    ctx.globalAlpha = alpha * 0.5;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-fontSize * 1.5, fontSize * 1.1);
+    ctx.lineTo(fontSize * 1.5, fontSize * 1.1);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  /* 进度条 */
+  function drawProgress(t){
+    var total = WORDS.length;
+    var done = idx - 1;
+    var p = done / total;
+    ctx.fillStyle = 'rgba(100,150,255,.15)';
+    ctx.fillRect(0, H - 3, W, 3);
+    ctx.fillStyle = '#4d8dff';
+    ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 8;
+    ctx.fillRect(0, H - 3, W * p, 3);
+    ctx.shadowBlur = 0;
+  }
+
+  var lastT = performance.now();
+  function loop(now){
+    var dt = (now - lastT) / 1000;
+    lastT = now;
+    phaseTime += dt;
+
+    drawBg();
+    drawParticles(dt);
+    drawWord(dt);
+    drawProgress(now / 1000);
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
