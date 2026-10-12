@@ -156,9 +156,7 @@
       else oy=-d2;
       if(p3>=1){
         scatterCount++;
-        console.log('scatter done #'+scatterCount+' / '+MAX_SCATTER);
         if(scatterCount >= MAX_SCATTER){
-          console.log('→ GATHER phase');
           phase = 'gather';
           phaseT = 0;
           initGather();
@@ -231,7 +229,6 @@
 
     /* 全部到位 → 最终闪光 */
     if(allArrived && phase === 'gather'){
-      console.log('→ FINAL_GLOW phase');
       phase = 'final_glow';
       phaseT = 0;
     }
@@ -286,7 +283,6 @@
 
     /* 4秒后回到散词循环 */
     if(phaseT > 4.0){
-      console.log('→ SCATTER loop restart');
       scatterCount = 0;
       phase = 'scatter_in';
       phaseT = 0;
