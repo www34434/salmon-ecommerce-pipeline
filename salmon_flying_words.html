@@ -297,10 +297,12 @@ canvas{display:block;position:absolute;top:0;left:0}
       ctx.restore();
     }
 
-    /* 全屏预爆闪光（0.3s 时一帧白闪）*/
-    if(dt > 0.28 && dt < 0.34){
+    /* 全屏预爆闪光（0.3s 起 0.4s 内渐入渐出）*/
+    if(dt > 0.28 && dt < 0.68){
+      var flashT = (dt - 0.28) / 0.4;
+      var flashAlpha = Math.sin(flashT * Math.PI) * 0.12;  /* 正弦淡入淡出，峰值 0.12 */
       ctx.save();
-      ctx.globalAlpha = 0.25;
+      ctx.globalAlpha = flashAlpha;
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, W, H);
       ctx.restore();
@@ -311,12 +313,16 @@ canvas{display:block;position:absolute;top:0;left:0}
       bp.life -= 0.016;
       if(bp.life <= 0) return false;
       bp.x += bp.vx; bp.y += bp.vy;
-      bp.vx *= 0.96; bp.vy *= 0.96;
+      bp.vx *= 0.94; bp.vy *= 0.94;  /* 更快减速，避免飞太远 */
+      /* 淡入：前 18% 生命期 ramp 0→max，之后渐淡 */
+      var fadeIn = Math.min(bp.life / (bp.maxLife * 0.18), 1);
+      var fadeOut = Math.min(bp.life / bp.maxLife, 1);  /* 1→0 整体淡出 */
+      var alpha = fadeIn * fadeOut * 0.65;
       ctx.save();
-      ctx.globalAlpha = bp.life * 0.8;
+      ctx.globalAlpha = alpha;
       ctx.fillStyle = bp.c;
-      ctx.shadowColor = bp.c; ctx.shadowBlur = 8;
-      ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.r * bp.life, 0, 7); ctx.fill();
+      ctx.shadowColor = bp.c; ctx.shadowBlur = 6;
+      ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.r * Math.min(fadeOut, 1), 0, 7); ctx.fill();
       ctx.restore();
       return true;
     });
@@ -362,24 +368,25 @@ canvas{display:block;position:absolute;top:0;left:0}
       /* 到位冲击波 */
       if(arrived && sinceArrival >= 0 && sinceArrival < 0.6 && !ch._burst){
         ch._burst = true;
-        /* 炸开粒子 */
-        for(var bi=0; bi<24; bi++){
-          var ang = (bi/24)*Math.PI*2 + Math.random()*0.3;
-          var spd = 3 + Math.random()*6;
+        /* 炸开粒子：更小更多更慢，柔和发散 */
+        for(var bi=0; bi<18; bi++){
+          var ang = (bi/18)*Math.PI*2 + Math.random()*0.4;
+          var spd = 1.2 + Math.random()*2.8;  /* 1.2-4.0，更慢 */
           burstParticles.push({
             x: targetX, y: targetY,
             vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd,
-            r: 2 + Math.random()*3,
+            r: 1.2 + Math.random()*1.8,  /* 更小 */
             c: ch.glow,
-            life: 0.8 + Math.random()*0.4
+            life: 1.0 + Math.random()*0.6,  /* 1.0-1.6s 更长 */
+            maxLife: 1.0 + Math.random()*0.6  /* 记录初始生命值 */
           });
         }
       }
 
-      /* 到位闪光帧（短暂全白高光）*/
+      /* 到位闪光帧（柔和渐入渐出高光）*/
       var flashAlpha = 0;
-      if(arrived && sinceArrival >= 0 && sinceArrival < 0.15){
-        flashAlpha = (1 - sinceArrival/0.15);
+      if(arrived && sinceArrival >= 0 && sinceArrival < 0.25){
+        flashAlpha = Math.sin((sinceArrival/0.25) * Math.PI) * 0.5;  /* 正弦淡入淡出，峰值 0.5 */
       }
 
       /* 拖尾光迹（飞入过程）*/
