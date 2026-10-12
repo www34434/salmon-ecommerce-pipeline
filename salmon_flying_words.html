@@ -272,88 +272,227 @@ canvas{display:block;position:absolute;top:0;left:0}
      最后 0.5 秒：5 字从隧道中心汇聚成「深海三文鱼」
      ============================================================= */
   var FINAL_CHARS = [
-    {t:'深', c:'#4d8dff'},
-    {t:'海', c:'#6db5ff'},
-    {t:'三', c:'#ff7a3c'},
-    {t:'文', c:'#ffb26a'},
-    {t:'鱼', c:'#a8d4ff'},
+    {t:'深', c:'#4d8dff', glow:'#86a8ff'},
+    {t:'海', c:'#6db5ff', glow:'#8bc4ff'},
+    {t:'三', c:'#ff7a3c', glow:'#ffb26a'},
+    {t:'文', c:'#ffb26a', glow:'#ffd194'},
+    {t:'鱼', c:'#a8d4ff', glow:'#c3e0ff'},
   ];
+
+  /* 冲击波粒子（每个字到位时炸开）*/
+  var burstParticles = [];
 
   function drawFinalGather(t, tStart){
     var dt = t - tStart;
-    if(dt < 0 || dt > 2.0) return;
+    if(dt < 0 || dt > 2.5) return;
     var cx = W/2, cy = H/2;
+    var minDim = Math.min(W,H);
 
-    /* 隧道淡出 */
-    frame(t - dt*0.5);
-
-    FINAL_CHARS.forEach(function(ch, i){
-      var slotW = Math.min(W*0.12, 110);
-      var total = FINAL_CHARS.length;
-      var startX = cx - (total-1)*slotW/2;
-      var targetX = startX + i*slotW;
-      var targetY = cy;
-
-      var delay = i * 0.15;
-      var local = Math.max(0, dt - delay);
-      var p = Math.min(local/0.8, 1);
-      var e = 1 - Math.pow(1-p, 3);
-
-      /* 从远处（和隧道同方向）飞近 */
-      var fromZ = 2800;
-      var curZ = fromZ * (1-e);
-      var s = P/(P - curZ);
-
-      var x = targetX + (cx - 200*Math.cos(tunnelAngle(t)*Math.PI/180) - targetX) * (1-e);
-      var y = targetY + (cy - 150*Math.sin(tunnelAngle(t)*Math.PI/180) - targetY) * (1-e);
-      x = cx + (targetX - cx)*e;
-      y = cy + (targetY - cy)*e;
-
-      var fs = Math.min(W,H)*0.12 * (0.3 + 0.7*e);
-
+    /* 隧道快速淡出（前 0.3s）*/
+    var tunnelFade = Math.max(0, 1 - dt/0.3);
+    if(tunnelFade > 0){
       ctx.save();
-      ctx.globalAlpha = e;
-      ctx.translate(x, y);
-      ctx.fillStyle = ch.c;
-      ctx.shadowColor = ch.c; ctx.shadowBlur = 40*e;
-      ctx.font = 'bold '+fs+'px "Microsoft YaHei","PingFang SC","SimHei",sans-serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(ch.t, 0, 0);
-      ctx.globalAlpha = e*0.5; ctx.fillStyle = '#fff';
-      ctx.shadowBlur = 18*e;
-      ctx.fillText(ch.t, 0, 0);
-      ctx.restore();
-    });
-
-    /* 底部标语 */
-    if(dt > 1.0){
-      var subP = Math.min((dt-1.0)/0.5, 1);
-      ctx.save();
-      ctx.globalAlpha = subP*0.8;
-      ctx.font = Math.min(W,H)*0.028+'px Arial,sans-serif';
-      ctx.fillStyle = '#4d8dff';
-      ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 12;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('D E E P   S E A   S A L M O N', cx, cy + Math.min(W,H)*0.1);
+      ctx.globalAlpha = tunnelFade * 0.6;
+      frame(t - dt*0.5);
       ctx.restore();
     }
 
-    /* 光环 */
-    if(dt > 1.2){
-      for(var r=0; r<3; r++){
-        var rp = (dt-1.2 + r*0.4) % 1.2;
-        var radius = rp * Math.min(W,H)*0.4;
+    /* 全屏预爆闪光（0.3s 时一帧白闪）*/
+    if(dt > 0.28 && dt < 0.34){
+      ctx.save();
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+
+    /* 冲击波粒子更新+绘制 */
+    burstParticles = burstParticles.filter(function(bp){
+      bp.life -= 0.016;
+      if(bp.life <= 0) return false;
+      bp.x += bp.vx; bp.y += bp.vy;
+      bp.vx *= 0.96; bp.vy *= 0.96;
+      ctx.save();
+      ctx.globalAlpha = bp.life * 0.8;
+      ctx.fillStyle = bp.c;
+      ctx.shadowColor = bp.c; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.arc(bp.x, bp.y, bp.r * bp.life, 0, 7); ctx.fill();
+      ctx.restore();
+      return true;
+    });
+
+    FINAL_CHARS.forEach(function(ch, i){
+      var total = FINAL_CHARS.length;
+      /* 字间距：中间宽、两侧略窄（弧形排列）*/
+      var slotBase = minDim * 0.13;
+      var arcOffset = Math.sin((i/(total-1) - 0.5) * Math.PI) * minDim * 0.03;
+      var startX = cx - (total-1)*slotBase/2;
+      var targetX = startX + i*slotBase;
+      var targetY = cy - arcOffset;  /* 弧形：中间字略高 */
+      var targetZ = 0;  /* 不同字不同深度层次 */
+      if(i === 2) targetZ = -200;   /* 中间字「三」最靠前 */
+      else if(i === 0 || i === 4) targetZ = 300;  /* 两侧字靠后 */
+
+      var delay = i * 0.12;
+      var local = Math.max(0, dt - delay);
+      var flyDur = 0.6;
+      var p = Math.min(local/flyDur, 1);
+      var e = 1 - Math.pow(1-p, 4);  /* 更快的 ease-out */
+
+      /* 从远处飞来，z 从 3000 → targetZ */
+      var fromZ = 3000;
+      var curZ = fromZ + (targetZ - fromZ) * e;
+      var s = P/(P - curZ);
+
+      /* 起点：从隧道方向（中心后方）飞出 */
+      var fromX = cx + (Math.random()-0.5)*0;  /* 确定性 */
+      var fromY = cy + (Math.random()-0.5)*0;
+      var x = fromX + (targetX - fromX) * e;
+      var y = fromY + (targetY - fromY) * e;
+
+      /* 字号层次：中间字最大 */
+      var sizeMult = (i === 2) ? 1.15 : (i === 1 || i === 3) ? 1.0 : 0.9;
+      var fs = minDim * 0.13 * sizeMult * (0.2 + 0.8*e) * s;
+
+      /* 到位检测 */
+      var arrived = (p >= 1);
+      var arrivalTime = delay + flyDur;
+      var sinceArrival = dt - arrivalTime;
+
+      /* 到位冲击波 */
+      if(arrived && sinceArrival >= 0 && sinceArrival < 0.6 && !ch._burst){
+        ch._burst = true;
+        /* 炸开粒子 */
+        for(var bi=0; bi<24; bi++){
+          var ang = (bi/24)*Math.PI*2 + Math.random()*0.3;
+          var spd = 3 + Math.random()*6;
+          burstParticles.push({
+            x: targetX, y: targetY,
+            vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd,
+            r: 2 + Math.random()*3,
+            c: ch.glow,
+            life: 0.8 + Math.random()*0.4
+          });
+        }
+      }
+
+      /* 到位闪光帧（短暂全白高光）*/
+      var flashAlpha = 0;
+      if(arrived && sinceArrival >= 0 && sinceArrival < 0.15){
+        flashAlpha = (1 - sinceArrival/0.15);
+      }
+
+      /* 拖尾光迹（飞入过程）*/
+      if(!arrived && p > 0.3){
         ctx.save();
-        ctx.globalAlpha = (1 - rp/1.2)*0.18;
-        ctx.strokeStyle = '#4d8dff'; ctx.lineWidth = 2;
+        ctx.globalAlpha = (1-p)*0.3;
+        ctx.strokeStyle = ch.glow; ctx.lineWidth = 3;
+        ctx.shadowColor = ch.glow; ctx.shadowBlur = 15;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      /* 多层发光晕（到位后呼吸）*/
+      if(arrived){
+        var breath = 1 + Math.sin(sinceArrival*8)*0.05;
+        for(var ring=3; ring>=1; ring--){
+          ctx.save();
+          ctx.globalAlpha = 0.12 * (4-ring) / 3;
+          ctx.fillStyle = ch.glow;
+          ctx.shadowColor = ch.glow; ctx.shadowBlur = 50 * ring * breath;
+          ctx.font = 'bold '+fs+'px "Microsoft YaHei","PingFang SC","SimHei",sans-serif';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(ch.t, targetX, targetY);
+          ctx.restore();
+        }
+      }
+
+      /* 主文字 */
+      ctx.save();
+      ctx.globalAlpha = Math.min(e, 1);
+      ctx.translate(x, y);
+      ctx.fillStyle = ch.c;
+      ctx.shadowColor = ch.glow;
+      ctx.shadowBlur = arrived ? 30 : 20*e;
+      ctx.font = 'bold '+fs+'px "Microsoft YaHei","PingFang SC","SimHei",sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(ch.t, 0, 0);
+      /* 白色内核 */
+      ctx.globalAlpha = Math.min(e, 1) * 0.6;
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = ch.c; ctx.shadowBlur = 12;
+      ctx.fillText(ch.t, 0, 0);
+      ctx.restore();
+
+      /* 到位闪光（白色高光叠加）*/
+      if(flashAlpha > 0){
+        ctx.save();
+        ctx.globalAlpha = flashAlpha;
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = ch.glow; ctx.shadowBlur = 60;
+        ctx.font = 'bold '+fs*1.1+'px "Microsoft YaHei","PingFang SC","SimHei",sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(ch.t, targetX, targetY);
+        ctx.restore();
+      }
+    });
+
+    /* 全部到位后的爆发效果 */
+    var allArrived = dt > (0.12*4 + 0.6);
+    if(allArrived){
+      var sinceAll = dt - (0.12*4 + 0.6);
+
+      /* 中心爆炸光环（多环冲击波）*/
+      for(var er=0; er<4; er++){
+        var ep = (sinceAll + er*0.15) % 1.0;
+        var eRadius = ep * minDim * 0.5;
+        ctx.save();
+        ctx.globalAlpha = (1 - ep) * 0.25;
+        ctx.strokeStyle = ['#4d8dff','#86a8ff','#ff7a3c','#a8d4ff'][er];
+        ctx.lineWidth = 3 - er*0.5;
+        ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 15;
+        ctx.beginPath(); ctx.arc(cx, cy, eRadius, 0, 7); ctx.stroke();
+        ctx.restore();
+      }
+
+      /* 底部标语 */
+      if(sinceAll > 0.2){
+        var subP = Math.min((sinceAll-0.2)/0.4, 1);
+        ctx.save();
+        ctx.globalAlpha = subP * 0.85;
+        ctx.font = minDim*0.03+'px Arial,sans-serif';
+        ctx.fillStyle = '#4d8dff';
+        ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 12;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('D E E P   S E A   S A L M O N', cx, cy + minDim*0.12);
+        ctx.restore();
+      }
+
+      /* 顶部副标题 */
+      if(sinceAll > 0.4){
+        var topP = Math.min((sinceAll-0.4)/0.4, 1);
+        ctx.save();
+        ctx.globalAlpha = topP * 0.7;
+        ctx.font = 'bold '+minDim*0.025+'px "Microsoft YaHei",sans-serif';
+        ctx.fillStyle = '#6db5ff';
         ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 10;
-        ctx.beginPath(); ctx.arc(cx, cy, radius, 0, 7); ctx.stroke();
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('— 烟台 · 虹鳟 · 刺身级 —', cx, cy - minDim*0.12);
         ctx.restore();
       }
     }
   }
 
   function tunnelAngle(t){ return Math.sin(t*2*Math.PI)*2.5; }
+
+  /* 重置 burst 标志（每轮循环开始时）*/
+  function resetBurst(){
+    FINAL_CHARS.forEach(function(ch){ ch._burst = false; });
+    burstParticles = [];
+  }
 
   /* ----- 主循环 ----- */
   var LAST_HIT = null;
@@ -373,6 +512,7 @@ canvas{display:block;position:absolute;top:0;left:0}
       var ft = cycleT - DUR;
       drawFinalGather(t, t - ft);
       if(ft > FINAL_DURATION){
+        resetBurst();
         startGlobal = now/1000;  /* 重新开始 */
       }
     }
