@@ -67,9 +67,9 @@
   }
 
   /* 状态机：散词循环 8 个 → 汇集组合 */
-  var phase = 'scatter';   // scatter → gather → final → loop
+  var phase = 'scatter_in';   // scatter_in → scatter_hold → scatter_out → gather → final_glow → loop
   var scatterCount = 0;
-  var MAX_SCATTER = 8;
+  var MAX_SCATTER = 5;
   var scatterIdx = 0;
   var currentWord = null;
   var phaseT = 0;
@@ -156,7 +156,9 @@
       else oy=-d2;
       if(p3>=1){
         scatterCount++;
+        console.log('scatter done #'+scatterCount+' / '+MAX_SCATTER);
         if(scatterCount >= MAX_SCATTER){
+          console.log('→ GATHER phase');
           phase = 'gather';
           phaseT = 0;
           initGather();
@@ -229,6 +231,7 @@
 
     /* 全部到位 → 最终闪光 */
     if(allArrived && phase === 'gather'){
+      console.log('→ FINAL_GLOW phase');
       phase = 'final_glow';
       phaseT = 0;
     }
@@ -283,6 +286,7 @@
 
     /* 4秒后回到散词循环 */
     if(phaseT > 4.0){
+      console.log('→ SCATTER loop restart');
       scatterCount = 0;
       phase = 'scatter_in';
       phaseT = 0;
