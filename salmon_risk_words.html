@@ -255,31 +255,35 @@ const Z_SPAN = Z_NEAR - Z_FAR;
 function loop(now){
   const t = (now - T0) / 1000;
 
-  /* 阶段判定 */
-  const totalCycle = DUR + (MERGE_END - TUNNEL_END) + HERO_FADE + FINAL_HOLD;
+  /* 阶段判定：totalCycle 末尾 0.3s 淡出过渡 → 消除 loop 重置跳变 */
+  const TUNNEL_END = 6.0;
+  const MERGE_END  = 7.8;
+  const HERO_FADE  = 0.9;
+  const FINAL_HOLD = 2.0;
+  const LOOP_FADE  = 0.3;                  /* 重置前淡出过渡 */
+  const totalCycle = TUNNEL_END + (MERGE_END-TUNNEL_END) + HERO_FADE + FINAL_HOLD + LOOP_FADE;
   const tMod = t % totalCycle;
-  let tTunnel, merging, heroReveal;
+  let tTunnel, merging, heroReveal, loopFade = 0;
 
   if(tMod < TUNNEL_END){
-    /* 隧道循环：取模 → 无缝 loop */
     tTunnel = tMod; merging = false; heroReveal = 0;
   } else if(tMod < MERGE_END){
-    tTunnel = TUNNEL_END;
-    merging = true;
-    heroReveal = 0;
+    tTunnel = TUNNEL_END; merging = true; heroReveal = 0;
   } else if(tMod < MERGE_END + HERO_FADE){
     tTunnel = TUNNEL_END; merging = true;
     heroReveal = (tMod - MERGE_END) / HERO_FADE;
+  } else if(tMod < totalCycle - LOOP_FADE){
+    tTunnel = TUNNEL_END; merging = true; heroReveal = 1;
   } else {
-    tTunnel = TUNNEL_END; merging = true;
-    heroReveal = 1;
+    /* LOOP_FADE 期间：hero 淡出 → 避免瞬间跳回隧道态 */
+    tTunnel = TUNNEL_END; merging = true; heroReveal = 1;
+    loopFade = smoothstep((tMod - (totalCycle-LOOP_FADE)) / LOOP_FADE);
   }
 
   drawDeco(t);
 
-  /* 主舞台滚转（装饰层已同步）*/
-  stage.style.transform = 'rotate('+(Math.sin(t*2*Math.PI)*2.5).toFixed(4)+'deg)';
-  stage.style.transformOrigin = '50% 50%';
+  /* ⚠️ 不再给 #stage 设 transform：perspective 容器本身要干净，
+     装饰层 Canvas 已同步做了 ±2.5° 滚转 */
 
   const mergeP = merging
     ? clamp01((tMod - TUNNEL_END) / (MERGE_END - TUNNEL_END))
@@ -290,39 +294,30 @@ function loop(now){
   for(let i=0;i<items.length;i++){
     const it = items[i];
 
-    /* 局部进度 u：0 远 → 1 近（擦身而过）*/
     let u;
     if(merging){
-      /* 汇聚阶段：冻结在 tunnel 最后一帧的 u */
       u = ((TUNNEL_END / T_CYCLE + it.phase) % 1 + 1) % 1;
     } else {
       u = ((tTunnel / T_CYCLE + it.phase) % 1 + 1) % 1;
     }
 
-    /* z 线性推进 */
     let z = (Z_FAR + Z_SPAN * u) * K;
-
-    /* 散开系数：远处收拢近处甩开 */
     const drift = 0.5 + u*1.35;
     let x = it.x * drift * K;
     let y = it.y * drift * K;
     let opacity = lifeOpacity(u);
 
-    /* 近端糊化 + 远端气雾失焦 */
     let blurPx = 0;
     if(u > 0.86) blurPx = (u-0.86) * 40;
     else if(u < 0.22) blurPx = (0.22-u) * 12;
 
-    /* 三阶颜色（按 u 选深浅）+ 强调词特殊蓝 */
     const ci = Math.min(2, Math.floor(u*3));
     const col = it.isEmphasis ? C_EMP : C_LIGHT[ci];
 
-    /* 中央字标区让位：飞进 hero 椭圆区的词压暗到 ~22% */
+    /* 中央字标区让位 */
     let centralDim = 1;
     const W_=innerWidth, H_=innerHeight;
-    const dxE = (0)/0; // 稍后计算
     const heroCX = W_/2, heroCY = H_/2;
-    /* 从 transform 算出当前屏幕坐标（近似：透视后 px ≈ cx + x*s）*/
     const s = P_BASE/(P_BASE - (Z_FAR + Z_SPAN*u)*K);
     const px = heroCX + it.x*drift*K*s;
     const py = heroCY + it.y*drift*K*s;
@@ -332,12 +327,13 @@ function loop(now){
     if(dEll < 1) centralDim = Math.max(0.22, dEll);
     opacity *= centralDim;
 
-    /* 汇聚：所有词向中心收缩 + 淡出 */
     if(merging){
       x *= (1-ease); y *= (1-ease);
       opacity *= (1-ease);
-      blurPx = 0; /* 汇聚阶段不用糊 */
+      blurPx = 0;
     }
+    /* LOOP_FADE 期间整体淡出 → 避免跳变 */
+    opacity *= (1 - loopFade);
 
     const el = it.el;
     el.style.transform =
@@ -347,12 +343,12 @@ function loop(now){
     el.style.filter = blurPx>0 ? 'blur('+blurPx.toFixed(1)+'px)' : 'none';
   }
 
-  /* ── hero 前景：隧道阶段半透明常驻，汇聚后原位点亮 ── */
-  /* 当前 hero 是 CSS 固定元素，opacity 由 heroReveal 控制 */
+  /* ── hero 前景 ── */
   const baseOpacity = 0.32 + Math.sin(t*4*Math.PI)*0.05;
   if(merging){
-    hero.style.opacity = (0.32 + 0.68 * smoothstep(clamp01(heroReveal))).toFixed(3);
-    hero.style.transform = 'scale('+(0.92 + 0.08*smoothstep(clamp01(heroReveal))).toFixed(3)+')';
+    const hr = smoothstep(clamp01(heroReveal));
+    hero.style.opacity = (0.32 + 0.68 * hr) * (1 - loopFade);
+    hero.style.transform = 'scale('+(0.92 + 0.08*hr).toFixed(3)+')';
   } else {
     hero.style.opacity = baseOpacity.toFixed(3);
     hero.style.transform = 'scale(1)';
