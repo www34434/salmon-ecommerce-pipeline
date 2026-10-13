@@ -30,14 +30,14 @@ canvas{display:block;position:absolute;top:0;left:0}
   }
   resize(); window.addEventListener('resize', resize);
 
-  /* ----- 避雷主题 19 词（去重后；长词自动缩字号） ----- */
+  /* ----- 避雷主题 20 词（「淡水鱼不生吃」重复强调） ----- */
   var WORDS = [
     '重金属','水质污染','养殖密度','生食风险','不能生吃',
     '必须熟食','冷冻杀虫不彻底','淡水鱼不生吃','不推荐','谨慎消费',
-    '只敢熟食','虹鳟不是三文鱼','国产淡水三文鱼避雷','生食虹鳟风险','指虹为鲑',
-    '三文鱼标准之争','假三文鱼','三文鱼智商税','生食三文鱼团体标准争议'
+    '只敢熟食','虹鳟不是三文鱼','淡水鱼不生吃','国产淡水三文鱼避雷','生食虹鳟风险',
+    '指虹为鲑','三文鱼标准之争','假三文鱼','三文鱼智商税','生食三文鱼团体标准争议'
   ];
-  var EMPHASIS = [4,7,11,12,14,16];  /* 电光蓝强调词索引 */
+  var EMPHASIS = [4,7,10,13,14,17];  /* 电光蓝强调词索引（去重后调整）*/
   var COLORS = {
     light:  ['#f2f5ff','#c3cbe2','#8a95b5'],
     emp:    '#4da6ff',
@@ -323,9 +323,9 @@ canvas{display:block;position:absolute;top:0;left:0}
     });
   }
 
-  function drawFinalGather(t, tStart){
+  function drawFinalGather(t, tStart, duration){
     var dt = t - tStart;
-    if(dt < 0 || dt > 2.5) return;
+    if(dt < 0 || dt > duration) return;
     var cx = W/2, cy = H/2;
     var minDim = Math.min(W,H);
 
@@ -406,7 +406,7 @@ canvas{display:block;position:absolute;top:0;left:0}
     } else {
       /* 汇聚阶段：七字原位错峰点亮 */
       var ft = cycleT - DUR;
-      drawFinalGather(t, t - ft);
+      drawFinalGather(t, t - ft, FINAL_DURATION);
     }
 
     requestAnimationFrame(loop);
