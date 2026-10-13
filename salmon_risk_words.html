@@ -175,10 +175,20 @@ for(let d=0;d<56;d++) dust.push({
   len:40+rnd(d+400)*80
 });
 
-function drawDeco(t){
+function drawDeco(t, merging){
   const W=innerWidth, H=innerHeight, cx=W/2, cy=H/2;
   dc.fillStyle='#060812'; dc.fillRect(0,0,W,H);
   const minDim = Math.min(W,H);
+
+  /* 汇聚阶段：去除所有动效（尘埃/发丝环/滚转），只保留静态暗角，避免眩晕 */
+  if(merging){
+    const vg = dc.createRadialGradient(cx,cy,minDim*0.25, cx,cy,Math.max(W,H)*0.7);
+    vg.addColorStop(0,'rgba(6,8,18,0)');
+    vg.addColorStop(1,'rgba(3,5,14,0.92)');
+    dc.fillStyle = vg;
+    dc.fillRect(0,0,W,H);
+    return;
+  }
 
   /* 隧道滚转 ±2.5°（装饰层与主舞台同步）*/
   const tunnelRot = Math.sin(t*2*Math.PI) * 2.5*Math.PI/180;
@@ -272,7 +282,7 @@ function loop(now){
     loopFade = smoothstep((tMod - (totalCycle-LOOP_FADE)) / LOOP_FADE);
   }
 
-  drawDeco(t);
+  drawDeco(t, merging);
 
   /* ⚠️ 不再给 #stage 设 transform：perspective 容器本身要干净，
      装饰层 Canvas 已同步做了 ±2.5° 滚转 */
