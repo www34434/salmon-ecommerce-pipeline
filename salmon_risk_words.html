@@ -6,7 +6,7 @@
 <title>国产淡水三文鱼 · 避雷飞字</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#0a0709}
+html,body{width:100%;height:100%;overflow:hidden;background:#060812}
 canvas{display:block;position:absolute;top:0;left:0}
 </style>
 </head>
@@ -16,7 +16,7 @@ canvas{display:block;position:absolute;top:0;left:0}
 /* ================================================================
    Flying Words Tunnel — 国产淡水三文鱼避雷主题
    按 spec card: 黄金角铺位 + z轴透视推进 + 生命曲线 + 擦身而过
-   6秒2循环无缝 + 风险词红橙警示配色
+   6秒2循环无缝 + 科技蓝配色 · 简洁无粒子
    「国产淡水三文鱼」七字常驻屏幕中央，结尾原位点亮
    ================================================================ */
 (function(){
@@ -37,11 +37,11 @@ canvas{display:block;position:absolute;top:0;left:0}
     '只敢熟食','虹鳟不是三文鱼','国产淡水三文鱼避雷','生食虹鳟风险','指虹为鲑',
     '三文鱼标准之争','假三文鱼','三文鱼智商税','生食三文鱼团体标准争议'
   ];
-  var EMPHASIS = [4,7,11,12,14,16];  /* 红橙强调词索引 */
+  var EMPHASIS = [4,7,11,12,14,16];  /* 电光蓝强调词索引 */
   var COLORS = {
-    light:  ['#fff3ea','#e6c9b8','#b3927f'],
-    emp:    '#ff7a5c',
-    empGlow:'rgba(255,122,92,'
+    light:  ['#f2f5ff','#c3cbe2','#8a95b5'],
+    emp:    '#4da6ff',
+    empGlow:'rgba(77,166,255,'
   };
 
   /* ----- 确定性伪随机 ----- */
@@ -114,10 +114,10 @@ canvas{display:block;position:absolute;top:0;left:0}
     var pulse = 0.82 + Math.sin(t*4*Math.PI)*0.14;  /* 呼吸2次/6秒 */
     var cx = W/2, cy = H/2;
     var g = ctx.createRadialGradient(cx,cy,0, cx,cy, Math.min(W,H)*0.55);
-    g.addColorStop(0, 'rgba(255,140,100,'+(0.26*pulse)+')');
-    g.addColorStop(0.25, 'rgba(255,90,60,'+(0.11*pulse)+')');
-    g.addColorStop(0.6, 'rgba(60,20,15,0.08)');
-    g.addColorStop(1, 'rgba(10,7,9,0)');
+    g.addColorStop(0, 'rgba(134,168,255,'+(0.26*pulse)+')');
+    g.addColorStop(0.25, 'rgba(77,141,255,'+(0.12*pulse)+')');
+    g.addColorStop(0.6, 'rgba(15,25,60,0.08)');
+    g.addColorStop(1, 'rgba(6,8,18,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0,0,W,H);
   }
@@ -126,8 +126,8 @@ canvas{display:block;position:absolute;top:0;left:0}
   function drawVignette(){
     var cx = W/2, cy = H/2;
     var g = ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.25, cx,cy,Math.max(W,H)*0.7);
-    g.addColorStop(0, 'rgba(10,7,9,0)');
-    g.addColorStop(1, 'rgba(5,3,7,0.92)');
+    g.addColorStop(0, 'rgba(6,8,18,0)');
+    g.addColorStop(1, 'rgba(3,5,14,0.92)');
     ctx.fillStyle = g;
     ctx.fillRect(0,0,W,H);
   }
@@ -137,7 +137,7 @@ canvas{display:block;position:absolute;top:0;left:0}
     var cx = W/2, cy = H/2;
     var DPR = Math.min(window.devicePixelRatio||1, 2);
 
-    ctx.fillStyle = '#0a0709';
+    ctx.fillStyle = '#060812';
     ctx.fillRect(0,0,W,H);
 
     /* 隧道整体极缓滚转 ±2.5度 */
@@ -160,7 +160,7 @@ canvas{display:block;position:absolute;top:0;left:0}
       var vx = rx*s*0.02, vy = ry*s*0.02;
       ctx.save();
       ctx.globalAlpha = life(dz)*0.4;
-      ctx.strokeStyle = '#ff8a6a';
+      ctx.strokeStyle = '#4da6ff';
       ctx.lineWidth = Math.max(0.5, s*1.5);
       ctx.beginPath();
       ctx.moveTo(px-vx*d.len, py-vy*d.len);
@@ -180,7 +180,7 @@ canvas{display:block;position:absolute;top:0;left:0}
       ctx.translate(cx, cy);
       ctx.rotate(tunnelRot);
       ctx.globalAlpha = life(hz)*0.35;
-      ctx.strokeStyle = '#ff6a4d';
+      ctx.strokeStyle = '#3d7dff';
       ctx.lineWidth = Math.max(0.3, hr.thickness * s * 0.6);
       ctx.beginPath();
       /* 扁椭圆 */
@@ -281,15 +281,15 @@ canvas{display:block;position:absolute;top:0;left:0}
      隧道阶段半透明垫底 → 结尾原位错峰点亮（无飞行、无粒子）
      ============================================================= */
   var FINAL_CHARS = [
-    {t:'国', c:'#ff5252', glow:'#ff8a80'},
-    {t:'产', c:'#ff6a3c', glow:'#ff9a6a'},
-    {t:'淡', c:'#ff8a3c', glow:'#ffb26a'},
-    {t:'水', c:'#ffab3c', glow:'#ffd194'},
-    {t:'三', c:'#ffc93c', glow:'#ffe08a'},
-    {t:'文', c:'#ffab3c', glow:'#ffd194'},
-    {t:'鱼', c:'#ff6a3c', glow:'#ff9a6a'},
+    {t:'国', c:'#4d8dff', glow:'#86a8ff'},
+    {t:'产', c:'#5da9ff', glow:'#9ac4ff'},
+    {t:'淡', c:'#6db5ff', glow:'#a8d0ff'},
+    {t:'水', c:'#86c8ff', glow:'#b8dcff'},
+    {t:'三', c:'#a8d4ff', glow:'#d0e8ff'},
+    {t:'文', c:'#86c8ff', glow:'#b8dcff'},
+    {t:'鱼', c:'#5da9ff', glow:'#9ac4ff'},
   ];
-  var ARRIVE_ALL = (FINAL_CHARS.length-1)*0.12 + 0.45;
+  var ARRIVE_ALL = (FINAL_CHARS.length-1)*0.16 + 0.7;
 
   var FONT = '"Microsoft YaHei","PingFang SC","SimHei",sans-serif';
 
@@ -342,37 +342,29 @@ canvas{display:block;position:absolute;top:0;left:0}
       ctx.restore();
     }
 
-    /* 七字原位错峰点亮（原位弹跳 + 从垫底透明度点亮，无飞行无粒子）*/
+    /* 七字原位错峰点亮（轻柔淡入 + 微上升，无弹跳无粒子）*/
     FINAL_CHARS.forEach(function(ch, i){
       var pos = charLayout(i, cx, cy, minDim);
-      var delay = i * 0.12;
-      var popDur = 0.45;
+      var delay = i * 0.16;
+      var popDur = 0.7;
       var sincePop = Math.max(0, dt - delay);
       var p = Math.min(sincePop/popDur, 1);
+      var e = 1 - Math.pow(1-p, 3);  /* ease-out cubic，轻柔到位 */
 
-      /* scale 弹跳：0.6 → 过冲 1.16 → 回落 1.0 */
-      var scale;
-      if(p < 0.55){
-        var q1 = p/0.55;
-        scale = 0.6 + 0.56 * (1 - Math.pow(1-q1, 3));
-      } else {
-        var q2 = (p-0.55)/0.45;
-        scale = 1.16 - 0.16 * (q2*q2*(3-2*q2));
-      }
+      /* 透明度：垫底 0.3 → 1；scale 微上升 0.92 → 1.0 */
+      var alpha = 0.3 + 0.7 * e;
+      var scale = 0.92 + 0.08 * e;
 
-      /* 透明度：垫底 0.35 → 1 */
-      var alpha = 0.35 + 0.65 * p;
-
-      /* 光晕：点亮瞬间强脉冲，之后柔和呼吸 */
-      var glowBlur = 18 + Math.max(0, 0.45 - sincePop) * 80 + Math.sin(t*3 + i)*4;
+      /* 光晕：恒定柔光 + 极缓呼吸 */
+      var glowBlur = 20 + Math.sin(t*1.6 + i)*4;
 
       var fs = minDim * 0.105 * pos.sizeMult * scale;
 
       ctx.save();
       ctx.font = 'bold '+fs+'px '+FONT;
       ctx.textAlign='center'; ctx.textBaseline='middle';
-      /* 外层光晕 */
-      ctx.globalAlpha = alpha * 0.35;
+      /* 外层柔光 */
+      ctx.globalAlpha = alpha * 0.3;
       ctx.fillStyle = ch.glow;
       ctx.shadowColor = ch.glow; ctx.shadowBlur = glowBlur;
       ctx.fillText(ch.t, pos.x, pos.y);
@@ -382,71 +374,74 @@ canvas{display:block;position:absolute;top:0;left:0}
       ctx.shadowBlur = glowBlur * 0.5;
       ctx.fillText(ch.t, pos.x, pos.y);
       /* 白色内核 */
-      ctx.globalAlpha = alpha * 0.55;
+      ctx.globalAlpha = alpha * 0.45;
       ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = ch.c; ctx.shadowBlur = 10;
+      ctx.shadowColor = ch.c; ctx.shadowBlur = 8;
       ctx.fillText(ch.t, pos.x, pos.y);
       ctx.restore();
     });
 
-    /* 全部点亮后：冲击波环 + 双副标题 */
+    /* 全部点亮后：科技感细线光带 + 双副标题（轻柔淡入）*/
     var allArrived = dt > ARRIVE_ALL;
     if(allArrived){
       var sinceAll = dt - ARRIVE_ALL;
 
-      /* 冲击波光环（多环，随节奏扩散）*/
-      for(var er=0; er<4; er++){
-        var ep = (sinceAll + er*0.15) % 1.0;
-        var eRadius = ep * minDim * 0.5;
+      /* 细线光带：从中心向两侧展开 */
+      if(sinceAll > 0.05){
+        var lineP = Math.min((sinceAll-0.05)/0.6, 1);
+        var lw = minDim*0.55 * (1 - Math.pow(1-lineP, 3));
+        var ly = cy + minDim*0.085;
+        var lg = ctx.createLinearGradient(cx-lw/2, 0, cx+lw/2, 0);
+        lg.addColorStop(0, 'rgba(77,141,255,0)');
+        lg.addColorStop(0.5, 'rgba(134,168,255,0.55)');
+        lg.addColorStop(1, 'rgba(77,141,255,0)');
         ctx.save();
-        ctx.globalAlpha = (1 - ep) * 0.25;
-        ctx.strokeStyle = ['#ff5252','#ff8a5c','#ffc93c','#ffd194'][er];
-        ctx.lineWidth = 3 - er*0.5;
-        ctx.shadowColor = ctx.strokeStyle; ctx.shadowBlur = 15;
-        ctx.beginPath(); ctx.arc(cx, cy, eRadius, 0, 7); ctx.stroke();
-        ctx.restore();
-      }
-
-      /* 底部标语 */
-      if(sinceAll > 0.2){
-        var subP = Math.min((sinceAll-0.2)/0.4, 1);
-        ctx.save();
-        ctx.globalAlpha = subP * 0.85;
-        ctx.font = minDim*0.028+'px Arial,sans-serif';
-        ctx.fillStyle = '#ff6a4d';
-        ctx.shadowColor = '#ff6a4d'; ctx.shadowBlur = 12;
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('R A I N B O W   T R O U T   ·   N O T   S A L M O N', cx, cy + minDim*0.12);
+        ctx.globalAlpha = lineP;
+        ctx.fillStyle = lg;
+        ctx.fillRect(cx-lw/2, ly, lw, 1.5);
         ctx.restore();
       }
 
       /* 顶部副标题 */
       if(sinceAll > 0.4){
-        var topP = Math.min((sinceAll-0.4)/0.4, 1);
+        var topP = Math.min((sinceAll-0.4)/0.5, 1);
         ctx.save();
-        ctx.globalAlpha = topP * 0.7;
-        ctx.font = 'bold '+minDim*0.025+'px "Microsoft YaHei",sans-serif';
-        ctx.fillStyle = '#ffb26a';
-        ctx.shadowColor = '#ff6a4d'; ctx.shadowBlur = 10;
+        ctx.globalAlpha = topP * 0.65;
+        ctx.font = 'bold '+minDim*0.024+'px "Microsoft YaHei",sans-serif';
+        ctx.fillStyle = '#6db5ff';
+        ctx.shadowColor = '#3d7dff'; ctx.shadowBlur = 8;
         ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('— 淡水鱼 · 不生吃 · 必须熟食 —', cx, cy - minDim*0.12);
+        ctx.fillText('— 淡水鱼 · 不生吃 · 必须熟食 —', cx, cy - minDim*0.125);
+        ctx.restore();
+      }
+
+      /* 底部标语 */
+      if(sinceAll > 0.6){
+        var subP = Math.min((sinceAll-0.6)/0.5, 1);
+        ctx.save();
+        ctx.globalAlpha = subP * 0.75;
+        ctx.font = minDim*0.026+'px Arial,sans-serif';
+        ctx.fillStyle = '#4d8dff';
+        ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 8;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('R A I N B O W   T R O U T   ·   N O T   S A L M O N', cx, cy + minDim*0.125);
         ctx.restore();
       }
     }
   }
 
   /* ----- 主循环 ----- */
-  var FINAL_DURATION = 2.5;
+  var FINAL_DURATION = 3.5;
   var startGlobal = performance.now()/1000;
 
   function loop(now){
     var t = (now/1000 - startGlobal);
-    var cycleT = t % (DUR + FINAL_DURATION);  /* 6秒隧道 + 2.5秒汇聚 */
+    var cycleT = t % (DUR + FINAL_DURATION);  /* 6秒隧道 + 3.5秒点亮 */
 
     if(cycleT < DUR){
       /* 隧道阶段：七字常驻中央半透明垫底 + 呼吸 */
       frame(cycleT);
-      drawCenterTitle(0.32 + Math.sin(cycleT/1.5 * 2*Math.PI)*0.06);
+      drawCenterTitle(0.32 + Math.sin(cycleT/2.5 * 2*Math.PI)*0.05);
     } else {
       /* 汇聚阶段：七字原位错峰点亮 */
       var ft = cycleT - DUR;
