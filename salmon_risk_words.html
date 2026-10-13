@@ -30,14 +30,14 @@ html,body{height:100%;overflow:hidden;background:#04060b;
 .hero{
   position:fixed;inset:0;z-index:999;
   display:grid;place-content:center;text-align:center;
-  pointer-events:none;opacity:.5;
+  pointer-events:none;opacity:1;
   will-change:opacity,transform;
   isolation:isolate;            /* 强制独立 stacking context */
 }
 .hero h1{
   font-size:clamp(32px,4.8vw,80px);
   font-weight:700;letter-spacing:.14em;
-  color:#eef4ff;
+  color:#ffffff;
 }
 .hero p{
   margin-top:14px;font-size:11px;letter-spacing:.42em;
@@ -335,13 +335,13 @@ function loop(now){
     el.style.filter = blurPx>0 ? 'blur('+blurPx.toFixed(1)+'px)' : 'none';
   }
 
-  /* ── hero 前景：一直置于顶层，稳定可见，不做 sin 抖动、不参与 LOOP_FADE ── */
+  /* ── hero 前景：一直白色且明显，置于顶层，不参与 LOOP_FADE ── */
   if(merging){
     const hr = smoothstep(clamp01(heroReveal));
-    hero.style.opacity = (0.5 + 0.5 * hr).toFixed(3);
+    hero.style.opacity = '1';
     hero.style.transform = 'scale('+(0.92 + 0.08*hr).toFixed(3)+')';
   } else {
-    hero.style.opacity = 0.5;
+    hero.style.opacity = '1';
     hero.style.transform = 'scale(1)';
   }
 
