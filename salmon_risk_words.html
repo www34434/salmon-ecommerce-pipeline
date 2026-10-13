@@ -1,417 +1,367 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>国产淡水三文鱼 · 避雷飞字</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>国产淡水三文鱼 · 词语隧道</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;overflow:hidden;background:#060812}
-canvas{display:block;position:absolute;top:0;left:0}
+html,body{height:100%;overflow:hidden;background:#04060b;
+  font-family:"Inter","Helvetica Neue",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+/* 装饰层 Canvas：发丝环 + 尘埃 + 拖尾 + 光晕 + 暗角 */
+#deco{position:fixed;inset:0;z-index:0;pointer-events:none}
+/* 主舞台：CSS perspective 容器，相机不动，元素动 */
+#stage{
+  position:fixed;inset:0;z-index:1;
+  overflow:hidden;
+  perspective:4400px;          /* 1920 原生 = 1100 × 4 */
+  perspective-origin:50% 50%;
+}
+.word{
+  position:absolute;left:50%;top:50%;
+  transform-style:preserve-3d;
+  font-weight:700;letter-spacing:.06em;
+  white-space:nowrap;pointer-events:none;
+  will-change:transform,opacity,filter;
+}
+/* 前景层：隧道阶段半透明常驻，汇聚后点亮 */
+.hero{
+  position:fixed;inset:0;z-index:2;
+  display:grid;place-content:center;text-align:center;
+  pointer-events:none;opacity:.32;
+  will-change:opacity,transform;
+}
+.hero h1{
+  font-size:clamp(32px,4.8vw,80px);
+  font-weight:700;letter-spacing:.14em;
+  color:#eef4ff;
+}
+.hero p{
+  margin-top:14px;font-size:11px;letter-spacing:.42em;
+  text-transform:uppercase;color:#6d83b0;
+}
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+
+<canvas id="deco"></canvas>
+<div id="stage"></div>
+
+<div class="hero">
+  <h1 id="hero-title">国产淡水三文鱼</h1>
+  <p>farmed freshwater salmon · risk</p>
+</div>
+
 <script>
-/* ================================================================
-   Flying Words Tunnel — 国产淡水三文鱼避雷主题
-   按 spec card: 黄金角铺位 + z轴透视推进 + 生命曲线 + 擦身而过
-   6秒2循环无缝 + 科技蓝配色 · 简洁无粒子
-   「国产淡水三文鱼」七字常驻屏幕中央，结尾原位点亮
-   ================================================================ */
-(function(){
-  var cv = document.getElementById('c');
-  var ctx = cv.getContext('2d');
-  var W,H,P;
-  function resize(){
-    W = cv.width = window.innerWidth;
-    H = cv.height = window.innerHeight;
-    P = 4400;  /* perspective 原生值 */
-  }
-  resize(); window.addEventListener('resize', resize);
+(()=>{
+'use strict';
 
-  /* ----- 避雷主题 20 词（「淡水鱼不生吃」重复强调） ----- */
-  var WORDS = [
-    '重金属','水质污染','养殖密度','生食风险','不能生吃',
-    '必须熟食','冷冻杀虫不彻底','淡水鱼不生吃','不推荐','谨慎消费',
-    '只敢熟食','虹鳟不是三文鱼','淡水鱼不生吃','国产淡水三文鱼避雷','生食虹鳟风险',
-    '指虹为鲑','三文鱼标准之争','假三文鱼','三文鱼智商税','生食三文鱼团体标准争议'
-  ];
-  var EMPHASIS = [4,7,10,13,14,17];  /* 电光蓝强调词索引（去重后调整）*/
-  var COLORS = {
-    light:  ['#f2f5ff','#c3cbe2','#8a95b5'],
-    emp:    '#4da6ff',
-    empGlow:'rgba(77,166,255,'
-  };
+/* ═══════════════════════════════════════════════
+   参数（1920 原生坐标 = 480 设计坐标 ×4）
+   严格对齐 spec card
+   ═══════════════════════════════════════════════ */
+const P_BASE  = 4400;                 /* perspective 原生值 */
+const Z_FAR   = -7000;                /* 出生点 */
+const Z_NEAR  =  3200;                /* 消亡点（穿过相机平面） */
+const T_CYCLE = 3.0;                  /* 单词单程寿命(s) → 6s 跑 2 整圈 */
+const DUR     = 6.0;                  /* 隧道完整周期（2 圈）*/
+const CYCLES  = 2;                    /* 整数圈 → 无缝 loop */
 
-  /* ----- 确定性伪随机 ----- */
-  function rand(i){
-    var x = Math.sin((i*9301+49297)*0.0001)*233280;
-    return x - Math.floor(x);
-  }
+const OT = [0, 0.25, 0.6, 0.85, 1];   /* 生命曲线时间轴 */
+const OP = [0, 1,   0.5, 0.2,  0];    /* 生命曲线透明度 */
+const R_BASE = 328;  const R_SPAN = 660;  /* 半径：82×4 + 165×4 */
+const FLAT   = 0.6;  const GOLDEN = 2.39996;
 
-  /* ----- 词对象 ----- */
-  var N = WORDS.length;
-  var CYCLIC = 2;  /* 整数圈无缝循环 */
-  var DUR = 6.0;   /* 秒 */
+/* 时间轴：隧道循环 → 汇聚 → 定格（不再 loop 时重置到隧道起点）*/
+const TUNNEL_END = 6.0;   const MERGE_END = 7.8;   const HERO_FADE = 0.9;
+const FINAL_HOLD = 2.0;   /* 定格 2s 后回到隧道循环 */
 
-  var items = [];
-  for(var i=0; i<N; i++){
-    var a = i*2.39996 + rand(i*7+1)*0.8;     /* 黄金角 */
-    var r = 330 + rand(i)*660;                 /* 半径 */
-    var lenAdj = 6 / Math.max(5, WORDS[i].length);  /* 长词缩字号，避免溢出 */
-    items.push({
-      text: WORDS[i],
-      emphasis: EMPHASIS.indexOf(i)>=0,
-      angle: a, r: r,
-      yScale: 0.6,
-      spawnZ: -7000, endZ: 3200,
-      phase: i/N,                              /* 均分相位 */
-      fontSize: (64 + rand(i+100)*56) * lenAdj,
-      baseAlpha: 1.0
-    });
-  }
+/* 词表（20 个，「淡水鱼不生吃」重复强调）*/
+const WORDS = [
+  '重金属','水质污染','养殖密度','生食风险','不能生吃','必须熟食',
+  '冷冻杀虫不彻底','淡水鱼不生吃','不推荐','谨慎消费','只敢熟食',
+  '虹鳟不是三文鱼','淡水鱼不生吃','国产淡水三文鱼避雷','生食虹鳟风险','指虹为鲑',
+  '三文鱼标准之争','假三文鱼','三文鱼智商税','生食三文鱼团体标准争议'
+];
+const EMPHASIS = [4,7,12,13,14,17]; /* 强调词索引 */
 
-  /* ----- 生命曲线插值 ----- */
-  var OT = [0, 0.25, 0.6, 0.85, 1];
-  var OP = [0, 1, 0.5, 0.2, 0];
-  function life(u){
-    if(u<=0) return 0;
-    if(u>=1) return 0;
-    for(var k=0; k<4; k++){
-      if(u>=OT[k] && u<=OT[k+1]){
-        var p = (u-OT[k])/(OT[k+1]-OT[k]);
-        return OP[k] + (OP[k+1]-OP[k])*p;
-      }
-    }
-    return 0;
-  }
+/* 蓝白三阶（spec card midnight 配色）*/
+const C_LIGHT = ['#f2f5ff','#c3cbe2','#8a95b5'];
+const C_EMP   = '#4da6ff';
 
-  /* ----- 隧道壁发丝环 ----- */
-  var hairRings = [];
-  for(var k=0; k<10; k++){
-    hairRings.push({
-      baseR: 330 + k*66,
-      phase: k/10,
-      thickness: 1 + k*0.4
-    });
-  }
+/* ─────────────── 确定性伪随机 ─────────────── */
+const rnd = s => {
+  const x = Math.sin(s * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+};
 
-  /* ----- 尘埃流线 ----- */
-  var dust = [];
-  for(var d=0; d<56; d++){
-    dust.push({
-      angle: d*0.4 + rand(d*3)*0.6,
-      r: 100 + rand(d+50)*800,
-      zPhase: rand(d+200),
-      speed: 0.8 + rand(d+300)*0.6,
-      len: 40 + rand(d+400)*80
-    });
-  }
-
-  /* ----- 隧道阶段/点亮阶段统一无光晕：保留中央柔光层（无 shadowBlur） ----- */
-  function drawHalo(t){
-    var pulse = 0.82 + Math.sin(t*4*Math.PI)*0.14;  /* 呼吸2次/6秒 */
-    var cx = W/2, cy = H/2;
-    var g = ctx.createRadialGradient(cx,cy,0, cx,cy, Math.min(W,H)*0.55);
-    g.addColorStop(0, 'rgba(134,168,255,'+(0.22*pulse)+')');
-    g.addColorStop(0.25, 'rgba(77,141,255,'+(0.10*pulse)+')');
-    g.addColorStop(0.6, 'rgba(15,25,60,0.08)');
-    g.addColorStop(1, 'rgba(6,8,18,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0,0,W,H);
-  }
-
-  /* ----- 暗角 ----- */
-  function drawVignette(){
-    var cx = W/2, cy = H/2;
-    var g = ctx.createRadialGradient(cx,cy,Math.min(W,H)*0.25, cx,cy,Math.max(W,H)*0.7);
-    g.addColorStop(0, 'rgba(6,8,18,0)');
-    g.addColorStop(1, 'rgba(3,5,14,0.92)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0,0,W,H);
-  }
-
-  /* ----- 渲染一帧 ----- */
-  function frame(t){
-    var cx = W/2, cy = H/2;
-    var DPR = Math.min(window.devicePixelRatio||1, 2);
-
-    ctx.fillStyle = '#060812';
-    ctx.fillRect(0,0,W,H);
-
-    /* 隧道整体极缓滚转 ±2.5度 */
-    var tunnelRot = Math.sin(t*2*Math.PI) * 2.5 * Math.PI/180;
-    var cosR = Math.cos(tunnelRot), sinR = Math.sin(tunnelRot);
-
-    /* --- 尘埃流线 --- */
-    dust.forEach(function(d){
-      var dz = ((t*0.15*d.speed + d.zPhase) % 1);
-      /* dz: 0远→1近 */
-      var z = -7000 + dz*10200;
-      if(z < -6800 || z > 3000) return;
-      var s = P/(P-z);
-      var drift = 0.5 + dz*1.35;
-      var rx = d.r * drift * Math.cos(d.angle);
-      var ry = d.r * drift * Math.sin(d.angle) * 0.6;
-      var px = cx + rx * s;
-      var py = cy + ry * s;
-      /* 方向拖尾：沿 -v 方向延长 */
-      var vx = rx*s*0.02, vy = ry*s*0.02;
-      ctx.save();
-      ctx.globalAlpha = life(dz)*0.4;
-      ctx.strokeStyle = '#4da6ff';
-      ctx.lineWidth = Math.max(0.5, s*1.5);
-      ctx.beginPath();
-      ctx.moveTo(px-vx*d.len, py-vy*d.len);
-      ctx.lineTo(px, py);
-      ctx.stroke();
-      ctx.restore();
-    });
-
-    /* --- 隧道壁发丝环 --- */
-    hairRings.forEach(function(hr){
-      var hz = ((t/DUR*CYCLIC + hr.phase) % 1);
-      var z = -7000 + hz*10200;
-      if(z < -6800 || z > 3000) return;
-      var s = P/(P-z);
-      var drift = 0.5 + hz*1.35;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(tunnelRot);
-      ctx.globalAlpha = life(hz)*0.35;
-      ctx.strokeStyle = '#3d7dff';
-      ctx.lineWidth = Math.max(0.3, hr.thickness * s * 0.6);
-      ctx.beginPath();
-      /* 扁椭圆 */
-      for(var a=0; a<Math.PI*2; a+=0.12){
-        var ex = hr.baseR*drift*Math.cos(a) * s;
-        var ey = hr.baseR*drift*Math.sin(a)*0.6 * s;
-        if(a===0) ctx.moveTo(ex,ey); else ctx.lineTo(ex,ey);
-      }
-      ctx.stroke();
-      ctx.restore();
-    });
-
-    /* --- 中心光晕 --- */
-    drawHalo(t);
-
-    /* --- 词语 --- */
-    items.forEach(function(it){
-      /* 时间推进：每个词按自己的 phase 起始，整圈重复 */
-      var rawT = (t/DUR*CYCLIC + it.phase) % 1;
-      var u = rawT;  /* 0远→1近 */
-
-      var z = it.spawnZ + u*(it.endZ - it.spawnZ);
-      var s = P/(P-z);
-      var drift = 0.5 + u*1.35;
-
-      var rx = it.r * drift * Math.cos(it.angle);
-      var ry = it.r * drift * Math.sin(it.angle) * it.yScale;
-      /* 隧道滚转 */
-      var rx2 = rx*cosR - ry*sinR;
-      var ry2 = rx*sinR + ry*cosR;
-
-      var px = cx + rx2 * s;
-      var py = cy + ry2 * s;
-
-      /* 生命曲线 */
-      var op = life(u);
-
-      /* 中央字标区让位：飞进「国产淡水三文鱼」区域的词压暗 */
-      var centralDim = 1;
-      var dxE = (px-cx)/(Math.min(W,H)*0.46);
-      var dyE = (py-cy)/(Math.min(W,H)*0.20);
-      var dEll = Math.sqrt(dxE*dxE + dyE*dyE);
-      if(dEll < 1) centralDim = Math.max(0.22, dEll);
-
-      /* 近端糊化：u>0.86 起线性失焦 */
-      var blur = 0;
-      if(u > 0.86) blur = (u-0.86) * 40;
-      else if(u < 0.22) blur = (0.22-u) * 12;
-
-      /* 字号 */
-      var fs = it.fontSize * s;
-
-      /* 颜色 */
-      var col;
-      if(it.emphasis){
-        col = COLORS.emp;
-      } else {
-        var ci = Math.min(2, Math.floor(u*3));
-        col = COLORS.light[ci];
-      }
-
-      /* 方向拖尾（高速运动残影）*/
-      if(u > 0.7 && u < 1 && s > 1.2){
-        var tx = rx2*s*0.04, ty = ry2*s*0.04;
-        ctx.save();
-        for(var g=6; g>=1; g--){
-          ctx.globalAlpha = op * centralDim * 0.12 * (6-g+1)/6;
-          ctx.font = '700 '+fs+'px "Microsoft YaHei","SimHei",sans-serif';
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillStyle = col;
-          ctx.fillText(it.text, px-tx*g, py-ty*g);
-        }
-        ctx.restore();
-      }
-
-      /* 主文字（无 shadowBlur）*/
-      ctx.save();
-      ctx.globalAlpha = op * centralDim;
-      if(blur > 0){
-        ctx.filter = 'blur('+blur.toFixed(1)+'px)';
-      }
-      ctx.font = '700 '+fs+'px "Microsoft YaHei","SimHei",sans-serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = col;
-      ctx.fillText(it.text, px, py);
-      ctx.restore();
-    });
-
-    /* --- 暗角 --- */
-    drawVignette();
-  }
-
-  /* =============================================================
-     「国产淡水三文鱼」七字常驻屏幕中央：
-     隧道阶段半透明垫底 → 结尾原位错峰点亮（无飞行、无粒子）
-     ============================================================= */
-  var FINAL_CHARS = [
-    {t:'国', c:'#4d8dff', glow:'#86a8ff'},
-    {t:'产', c:'#5da9ff', glow:'#9ac4ff'},
-    {t:'淡', c:'#6db5ff', glow:'#a8d0ff'},
-    {t:'水', c:'#86c8ff', glow:'#b8dcff'},
-    {t:'三', c:'#a8d4ff', glow:'#d0e8ff'},
-    {t:'文', c:'#86c8ff', glow:'#b8dcff'},
-    {t:'鱼', c:'#5da9ff', glow:'#9ac4ff'},
-  ];
-  var ARRIVE_ALL = (FINAL_CHARS.length-1)*0.16 + 0.7;
-
-  var FONT = '"Microsoft YaHei","PingFang SC","SimHei",sans-serif';
-
-  /* 七字弧形布局（自适应字距：中间略高、中字最大）*/
-  function charLayout(i, cx, cy, minDim){
-    var total = FINAL_CHARS.length;
-    var fsBase = minDim * (total <= 5 ? 0.13 : 0.105);
-    var slotBase = (minDim*0.88 - fsBase) / (total-1);
-    var arcOffset = Math.sin((i/(total-1) - 0.5) * Math.PI) * minDim * (total <= 5 ? 0.03 : 0.025);
-    var mid = Math.floor(total/2);
-    var startX = cx - (total-1)*slotBase/2;
-    var dist = Math.abs(i - mid);
-    return {
-      x: startX + i*slotBase,
-      y: cy - arcOffset,
-      sizeMult: (dist===0) ? 1.12 : (dist===1 ? 1.0 : 0.9)
-    };
-  }
-
-  /* 隧道阶段：七字半透明常驻中央（无光晕）*/
-  function drawCenterTitle(alpha){
-    var cx = W/2, cy = H/2;
-    var minDim = Math.min(W,H);
-    FINAL_CHARS.forEach(function(ch, i){
-      var pos = charLayout(i, cx, cy, minDim);
-      var fs = minDim * 0.105 * pos.sizeMult;
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      ctx.font = 'bold '+fs+'px '+FONT;
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillStyle = ch.c;
-      ctx.fillText(ch.t, pos.x, pos.y);
-      ctx.restore();
-    });
-  }
-
-  function drawFinalGather(t, tStart, duration){
-    var dt = t - tStart;
-    if(dt < 0 || dt > duration) return;
-    var cx = W/2, cy = H/2;
-    var minDim = Math.min(W,H);
-
-    /* 隧道快速淡出（前 0.4s）*/
-    var tunnelFade = Math.max(0, 1 - dt/0.4);
-    if(tunnelFade > 0){
-      ctx.save();
-      ctx.globalAlpha = tunnelFade * 0.6;
-      frame(t - dt*0.5);
-      ctx.restore();
-    }
-
-    /* 七字原位错峰点亮（无光晕、无白色内核）*/
-    FINAL_CHARS.forEach(function(ch, i){
-      var pos = charLayout(i, cx, cy, minDim);
-      var delay = i * 0.16;
-      var popDur = 0.7;
-      var sincePop = Math.max(0, dt - delay);
-      var p = Math.min(sincePop/popDur, 1);
-      var e = 1 - Math.pow(1-p, 3);  /* ease-out cubic */
-
-      var alpha = 0.3 + 0.7 * e;
-      var scale = 0.92 + 0.08 * e;
-      var fs = minDim * 0.105 * pos.sizeMult * scale;
-
-      ctx.save();
-      ctx.font = 'bold '+fs+'px '+FONT;
-      ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.globalAlpha = alpha;
-      ctx.fillStyle = ch.c;
-      ctx.fillText(ch.t, pos.x, pos.y);
-      ctx.restore();
-    });
-
-    /* 全部点亮后：双副标题（无光带无阴影）*/
-    var allArrived = dt > ARRIVE_ALL;
-    if(allArrived){
-      var sinceAll = dt - ARRIVE_ALL;
-
-      /* 顶部副标题 */
-      if(sinceAll > 0.4){
-        var topP = Math.min((sinceAll-0.4)/0.5, 1);
-        ctx.save();
-        ctx.globalAlpha = topP * 0.7;
-        ctx.font = 'bold '+minDim*0.024+'px "Microsoft YaHei",sans-serif';
-        ctx.fillStyle = '#6db5ff';
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('— 淡水鱼 · 不生吃 · 必须熟食 —', cx, cy - minDim*0.125);
-        ctx.restore();
-      }
-
-      /* 底部标语 */
-      if(sinceAll > 0.6){
-        var subP = Math.min((sinceAll-0.6)/0.5, 1);
-        ctx.save();
-        ctx.globalAlpha = subP * 0.8;
-        ctx.font = minDim*0.026+'px Arial,sans-serif';
-        ctx.fillStyle = '#4d8dff';
-        ctx.textAlign='center'; ctx.textBaseline='middle';
-        ctx.fillText('R A I N B O W   T R O U T   ·   N O T   S A L M O N', cx, cy + minDim*0.125);
-        ctx.restore();
-      }
+/* ─────────────── 生命曲线 ─────────────── */
+function lifeOpacity(u){
+  for(let i=0;i<OT.length-1;i++){
+    if(u<=OT[i+1]){
+      const k=(u-OT[i])/(OT[i+1]-OT[i]);
+      return OP[i]+(OP[i+1]-OP[i])*k;
     }
   }
+  return OP[OP.length-1];
+}
+const clamp01 = x=>x<0?0:(x>1?1:x);
+const smoothstep = x=>x*x*(3-2*x);
 
-  /* ----- 主循环 ----- */
-  var FINAL_DURATION = 3.5;
-  var startGlobal = performance.now()/1000;
+/* ═══════════════════════════════════════════════
+   建场
+   ═══════════════════════════════════════════════ */
+const stage = document.getElementById('stage');
+const hero  = document.querySelector('.hero');
+const heroTitle = document.getElementById('hero-title');
+const items = [];
 
-  function loop(now){
-    var t = (now/1000 - startGlobal);
-    var cycleT = t % (DUR + FINAL_DURATION);  /* 6秒隧道 + 3.5秒点亮 */
+/* 七字常驻中央（CSS 层，比 hero 更灵活地控制每层）*/
+const HERO_CHARS = ['国','产','淡','水','三','文','鱼'];
 
-    if(cycleT < DUR){
-      /* 隧道阶段：七字常驻中央半透明垫底 + 呼吸 */
-      frame(cycleT);
-      drawCenterTitle(0.32 + Math.sin(cycleT/2.5 * 2*Math.PI)*0.05);
+WORDS.forEach((word,i)=>{
+  const a = i*GOLDEN + rnd(i*7+1)*0.8;
+  const r = R_BASE + rnd(i*7+2)*R_SPAN;
+  const x = Math.cos(a)*r;
+  const y = Math.sin(a)*r*FLAT;
+  const phase = i/WORDS.length;
+
+  const el = document.createElement('div');
+  el.className = 'word';
+  el.textContent = word;
+  /* 长词自动缩字号：11字「生食三文鱼团体标准争议」用 48px */
+  const baseFS = 70 + rnd(i*100+3)*50; /* 70-120px */
+  const lenAdj = 6 / Math.max(5, word.length);
+  el.style.fontSize = (baseFS * lenAdj) + 'px';
+  el.style.color = EMPHASIS.indexOf(i)>=0 ? C_EMP : C_LIGHT[0];
+  el.style.textShadow = 'none';
+  stage.appendChild(el);
+
+  items.push({ el, x, y, phase, isEmphasis: EMPHASIS.indexOf(i)>=0 });
+});
+
+/* ─────────────── 自适应缩放 ─────────────── */
+let K = 1;
+function resize(){
+  K = Math.min(innerWidth/1920, innerHeight/1080);
+  stage.style.perspective = (P_BASE*K)+'px';
+}
+addEventListener('resize', resize, {passive:true}); resize();
+
+/* ═══════════════════════════════════════════════
+   装饰层 Canvas：10 发丝环 + 56 尘埃 + 拖尾残影 + 光晕 + 暗角
+   ═══════════════════════════════════════════════ */
+const deco = document.getElementById('deco');
+const dc = deco.getContext('2d');
+function resizeCanvas(){
+  const dpr = Math.min(devicePixelRatio||1,2);
+  deco.width = innerWidth*dpr; deco.height = innerHeight*dpr;
+  deco.style.width=innerWidth+'px'; deco.style.height=innerHeight+'px';
+  dc.setTransform(dpr,0,0,dpr,0,0);
+}
+addEventListener('resize', resizeCanvas, {passive:true}); resizeCanvas();
+
+/* 10 发丝环 */
+const hair = [];
+for(let k=0;k<10;k++) hair.push({baseR:330+k*66, phase:k/10, thk:1+k*0.4});
+/* 56 尘埃流线 */
+const dust = [];
+for(let d=0;d<56;d++) dust.push({
+  angle:d*0.4+rnd(d*3)*0.6, r:100+rnd(d+50)*800,
+  zPhase:rnd(d+200), speed:0.8+rnd(d+300)*0.6,
+  len:40+rnd(d+400)*80
+});
+
+function drawDeco(t){
+  const W=innerWidth, H=innerHeight, cx=W/2, cy=H/2;
+  dc.fillStyle='#060812'; dc.fillRect(0,0,W,H);
+  const minDim = Math.min(W,H);
+
+  /* 隧道滚转 ±2.5°（装饰层与主舞台同步）*/
+  const tunnelRot = Math.sin(t*2*Math.PI) * 2.5*Math.PI/180;
+
+  /* ── 尘埃流线 ── */
+  dust.forEach(d=>{
+    const dz = ((t*0.15*d.speed+d.zPhase)%1+1)%1;
+    const z = Z_FAR + dz*(Z_NEAR-Z_FAR);
+    if(z<Z_FAR+200 || z>Z_NEAR-200) return;
+    const s = P_BASE/(P_BASE-z);
+    const drift = 0.5 + dz*1.35;
+    const rx = d.r*drift*Math.cos(d.angle);
+    const ry = d.r*drift*Math.sin(d.angle)*FLAT;
+    /* 应用滚转 */
+    const cosR=Math.cos(tunnelRot), sinR=Math.sin(tunnelRot);
+    const rx2=rx*cosR-ry*sinR, ry2=rx*sinR+ry*cosR;
+    const px=cx+rx2*s, py=cy+ry2*s;
+    const vx=rx2*s*0.02, vy=ry2*s*0.02;
+    dc.save();
+    dc.globalAlpha = lifeOpacity(dz)*0.4;
+    dc.strokeStyle='#4da6ff';
+    dc.lineWidth = Math.max(0.5, s*1.5);
+    dc.beginPath();
+    dc.moveTo(px-vx*d.len, py-vy*d.len);
+    dc.lineTo(px, py);
+    dc.stroke();
+    dc.restore();
+  });
+
+  /* ── 发丝环 ── */
+  hair.forEach(hr=>{
+    const hz = ((t/DUR*CYCLES + hr.phase)%1+1)%1;
+    const z = Z_FAR + hz*(Z_NEAR-Z_FAR);
+    if(z<Z_FAR+200 || z>Z_NEAR-200) return;
+    const s = P_BASE/(P_BASE-z);
+    const drift = 0.5 + hz*1.35;
+    dc.save();
+    dc.translate(cx,cy); dc.rotate(tunnelRot);
+    dc.globalAlpha = lifeOpacity(hz)*0.35;
+    dc.strokeStyle='#3d7dff';
+    dc.lineWidth = Math.max(0.3, hr.thk*s*0.6);
+    dc.beginPath();
+    for(let a=0;a<Math.PI*2;a+=0.12){
+      const ex = hr.baseR*drift*Math.cos(a)*s;
+      const ey = hr.baseR*drift*Math.sin(a)*FLAT*s;
+      if(a===0) dc.moveTo(ex,ey); else dc.lineTo(ex,ey);
+    }
+    dc.stroke();
+    dc.restore();
+  });
+
+  /* ── 中心光晕呼吸 ── */
+  const pulse = 0.82 + Math.sin(t*4*Math.PI)*0.14;
+  const g = dc.createRadialGradient(cx,cy,0, cx,cy, minDim*0.55);
+  g.addColorStop(0,    'rgba(134,168,255,'+(0.26*pulse)+')');
+  g.addColorStop(0.25, 'rgba(77,141,255,'+(0.12*pulse)+')');
+  g.addColorStop(0.6,  'rgba(15,25,60,0.08)');
+  g.addColorStop(1,    'rgba(6,8,18,0)');
+  dc.fillStyle = g;
+  dc.fillRect(0,0,W,H);
+
+  /* ── 暗角 ── */
+  const vg = dc.createRadialGradient(cx,cy,minDim*0.25, cx,cy,Math.max(W,H)*0.7);
+  vg.addColorStop(0,'rgba(6,8,18,0)');
+  vg.addColorStop(1,'rgba(3,5,14,0.92)');
+  dc.fillStyle = vg;
+  dc.fillRect(0,0,W,H);
+}
+
+/* ═══════════════════════════════════════════════
+   主循环
+   ═══════════════════════════════════════════════ */
+const T0 = performance.now();
+const Z_SPAN = Z_NEAR - Z_FAR;
+
+function loop(now){
+  const t = (now - T0) / 1000;
+
+  /* 阶段判定 */
+  const totalCycle = DUR + (MERGE_END - TUNNEL_END) + HERO_FADE + FINAL_HOLD;
+  const tMod = t % totalCycle;
+  let tTunnel, merging, heroReveal;
+
+  if(tMod < TUNNEL_END){
+    /* 隧道循环：取模 → 无缝 loop */
+    tTunnel = tMod; merging = false; heroReveal = 0;
+  } else if(tMod < MERGE_END){
+    tTunnel = TUNNEL_END;
+    merging = true;
+    heroReveal = 0;
+  } else if(tMod < MERGE_END + HERO_FADE){
+    tTunnel = TUNNEL_END; merging = true;
+    heroReveal = (tMod - MERGE_END) / HERO_FADE;
+  } else {
+    tTunnel = TUNNEL_END; merging = true;
+    heroReveal = 1;
+  }
+
+  drawDeco(t);
+
+  /* 主舞台滚转（装饰层已同步）*/
+  stage.style.transform = 'rotate('+(Math.sin(t*2*Math.PI)*2.5).toFixed(4)+'deg)';
+  stage.style.transformOrigin = '50% 50%';
+
+  const mergeP = merging
+    ? clamp01((tMod - TUNNEL_END) / (MERGE_END - TUNNEL_END))
+    : 0;
+  const ease = smoothstep(mergeP);
+
+  /* ── 词语渲染 ── */
+  for(let i=0;i<items.length;i++){
+    const it = items[i];
+
+    /* 局部进度 u：0 远 → 1 近（擦身而过）*/
+    let u;
+    if(merging){
+      /* 汇聚阶段：冻结在 tunnel 最后一帧的 u */
+      u = ((TUNNEL_END / T_CYCLE + it.phase) % 1 + 1) % 1;
     } else {
-      /* 汇聚阶段：七字原位错峰点亮 */
-      var ft = cycleT - DUR;
-      drawFinalGather(t, t - ft, FINAL_DURATION);
+      u = ((tTunnel / T_CYCLE + it.phase) % 1 + 1) % 1;
     }
 
-    requestAnimationFrame(loop);
+    /* z 线性推进 */
+    let z = (Z_FAR + Z_SPAN * u) * K;
+
+    /* 散开系数：远处收拢近处甩开 */
+    const drift = 0.5 + u*1.35;
+    let x = it.x * drift * K;
+    let y = it.y * drift * K;
+    let opacity = lifeOpacity(u);
+
+    /* 近端糊化 + 远端气雾失焦 */
+    let blurPx = 0;
+    if(u > 0.86) blurPx = (u-0.86) * 40;
+    else if(u < 0.22) blurPx = (0.22-u) * 12;
+
+    /* 三阶颜色（按 u 选深浅）+ 强调词特殊蓝 */
+    const ci = Math.min(2, Math.floor(u*3));
+    const col = it.isEmphasis ? C_EMP : C_LIGHT[ci];
+
+    /* 中央字标区让位：飞进 hero 椭圆区的词压暗到 ~22% */
+    let centralDim = 1;
+    const W_=innerWidth, H_=innerHeight;
+    const dxE = (0)/0; // 稍后计算
+    const heroCX = W_/2, heroCY = H_/2;
+    /* 从 transform 算出当前屏幕坐标（近似：透视后 px ≈ cx + x*s）*/
+    const s = P_BASE/(P_BASE - (Z_FAR + Z_SPAN*u)*K);
+    const px = heroCX + it.x*drift*K*s;
+    const py = heroCY + it.y*drift*K*s;
+    const dxE2 = (px-heroCX)/(Math.min(W_,H_)*0.46);
+    const dyE2 = (py-heroCY)/(Math.min(W_,H_)*0.22);
+    const dEll = Math.sqrt(dxE2*dxE2+dyE2*dyE2);
+    if(dEll < 1) centralDim = Math.max(0.22, dEll);
+    opacity *= centralDim;
+
+    /* 汇聚：所有词向中心收缩 + 淡出 */
+    if(merging){
+      x *= (1-ease); y *= (1-ease);
+      opacity *= (1-ease);
+      blurPx = 0; /* 汇聚阶段不用糊 */
+    }
+
+    const el = it.el;
+    el.style.transform =
+      'translate3d('+x.toFixed(2)+'px,'+y.toFixed(2)+'px,'+z.toFixed(2)+'px) translate(-50%,-50%)';
+    el.style.opacity = opacity.toFixed(3);
+    el.style.color = col;
+    el.style.filter = blurPx>0 ? 'blur('+blurPx.toFixed(1)+'px)' : 'none';
   }
+
+  /* ── hero 前景：隧道阶段半透明常驻，汇聚后原位点亮 ── */
+  /* 当前 hero 是 CSS 固定元素，opacity 由 heroReveal 控制 */
+  const baseOpacity = 0.32 + Math.sin(t*4*Math.PI)*0.05;
+  if(merging){
+    hero.style.opacity = (0.32 + 0.68 * smoothstep(clamp01(heroReveal))).toFixed(3);
+    hero.style.transform = 'scale('+(0.92 + 0.08*smoothstep(clamp01(heroReveal))).toFixed(3)+')';
+  } else {
+    hero.style.opacity = baseOpacity.toFixed(3);
+    hero.style.transform = 'scale(1)';
+  }
+
   requestAnimationFrame(loop);
+}
+
+requestAnimationFrame(loop);
 })();
 </script>
 </body>
