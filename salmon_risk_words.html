@@ -30,7 +30,7 @@ html,body{height:100%;overflow:hidden;background:#04060b;
 .hero{
   position:fixed;inset:0;z-index:999;
   display:grid;place-content:center;text-align:center;
-  pointer-events:none;opacity:.32;
+  pointer-events:none;opacity:.5;
   will-change:opacity,transform;
   isolation:isolate;            /* 强制独立 stacking context */
 }
@@ -230,16 +230,6 @@ function drawDeco(t){
     dc.restore();
   });
 
-  /* ── 中心光晕呼吸 ── */
-  const pulse = 0.82 + Math.sin(t*4*Math.PI)*0.14;
-  const g = dc.createRadialGradient(cx,cy,0, cx,cy, minDim*0.55);
-  g.addColorStop(0,    'rgba(134,168,255,'+(0.26*pulse)+')');
-  g.addColorStop(0.25, 'rgba(77,141,255,'+(0.12*pulse)+')');
-  g.addColorStop(0.6,  'rgba(15,25,60,0.08)');
-  g.addColorStop(1,    'rgba(6,8,18,0)');
-  dc.fillStyle = g;
-  dc.fillRect(0,0,W,H);
-
   /* ── 暗角 ── */
   const vg = dc.createRadialGradient(cx,cy,minDim*0.25, cx,cy,Math.max(W,H)*0.7);
   vg.addColorStop(0,'rgba(6,8,18,0)');
@@ -345,14 +335,13 @@ function loop(now){
     el.style.filter = blurPx>0 ? 'blur('+blurPx.toFixed(1)+'px)' : 'none';
   }
 
-  /* ── hero 前景 ── */
-  const baseOpacity = 0.32 + Math.sin(t*4*Math.PI)*0.05;
+  /* ── hero 前景：一直置于顶层，稳定可见，不做 sin 抖动、不参与 LOOP_FADE ── */
   if(merging){
     const hr = smoothstep(clamp01(heroReveal));
-    hero.style.opacity = (0.32 + 0.68 * hr) * (1 - loopFade);
+    hero.style.opacity = (0.5 + 0.5 * hr).toFixed(3);
     hero.style.transform = 'scale('+(0.92 + 0.08*hr).toFixed(3)+')';
   } else {
-    hero.style.opacity = baseOpacity.toFixed(3);
+    hero.style.opacity = 0.5;
     hero.style.transform = 'scale(1)';
   }
 
