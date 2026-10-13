@@ -109,13 +109,13 @@ canvas{display:block;position:absolute;top:0;left:0}
     });
   }
 
-  /* ----- 中心光晕 ----- */
+  /* ----- 隧道阶段/点亮阶段统一无光晕：保留中央柔光层（无 shadowBlur） ----- */
   function drawHalo(t){
     var pulse = 0.82 + Math.sin(t*4*Math.PI)*0.14;  /* 呼吸2次/6秒 */
     var cx = W/2, cy = H/2;
     var g = ctx.createRadialGradient(cx,cy,0, cx,cy, Math.min(W,H)*0.55);
-    g.addColorStop(0, 'rgba(134,168,255,'+(0.26*pulse)+')');
-    g.addColorStop(0.25, 'rgba(77,141,255,'+(0.12*pulse)+')');
+    g.addColorStop(0, 'rgba(134,168,255,'+(0.22*pulse)+')');
+    g.addColorStop(0.25, 'rgba(77,141,255,'+(0.10*pulse)+')');
     g.addColorStop(0.6, 'rgba(15,25,60,0.08)');
     g.addColorStop(1, 'rgba(6,8,18,0)');
     ctx.fillStyle = g;
@@ -256,7 +256,7 @@ canvas{display:block;position:absolute;top:0;left:0}
         ctx.restore();
       }
 
-      /* 主文字 */
+      /* 主文字（无 shadowBlur）*/
       ctx.save();
       ctx.globalAlpha = op * centralDim;
       if(blur > 0){
@@ -264,9 +264,6 @@ canvas{display:block;position:absolute;top:0;left:0}
       }
       ctx.font = '700 '+fs+'px "Microsoft YaHei","SimHei",sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      /* 发光 */
-      ctx.shadowColor = col;
-      ctx.shadowBlur = it.emphasis ? 20 : 8;
       ctx.fillStyle = col;
       ctx.fillText(it.text, px, py);
       ctx.restore();
@@ -309,7 +306,7 @@ canvas{display:block;position:absolute;top:0;left:0}
     };
   }
 
-  /* 隧道阶段：七字半透明常驻中央（呼吸）*/
+  /* 隧道阶段：七字半透明常驻中央（无光晕）*/
   function drawCenterTitle(alpha){
     var cx = W/2, cy = H/2;
     var minDim = Math.min(W,H);
@@ -320,7 +317,6 @@ canvas{display:block;position:absolute;top:0;left:0}
       ctx.globalAlpha = alpha;
       ctx.font = 'bold '+fs+'px '+FONT;
       ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.shadowColor = ch.glow; ctx.shadowBlur = 16;
       ctx.fillStyle = ch.c;
       ctx.fillText(ch.t, pos.x, pos.y);
       ctx.restore();
@@ -342,74 +338,40 @@ canvas{display:block;position:absolute;top:0;left:0}
       ctx.restore();
     }
 
-    /* 七字原位错峰点亮（轻柔淡入 + 微上升，无弹跳无粒子）*/
+    /* 七字原位错峰点亮（无光晕、无白色内核）*/
     FINAL_CHARS.forEach(function(ch, i){
       var pos = charLayout(i, cx, cy, minDim);
       var delay = i * 0.16;
       var popDur = 0.7;
       var sincePop = Math.max(0, dt - delay);
       var p = Math.min(sincePop/popDur, 1);
-      var e = 1 - Math.pow(1-p, 3);  /* ease-out cubic，轻柔到位 */
+      var e = 1 - Math.pow(1-p, 3);  /* ease-out cubic */
 
-      /* 透明度：垫底 0.3 → 1；scale 微上升 0.92 → 1.0 */
       var alpha = 0.3 + 0.7 * e;
       var scale = 0.92 + 0.08 * e;
-
-      /* 光晕：恒定柔光 + 极缓呼吸 */
-      var glowBlur = 20 + Math.sin(t*1.6 + i)*4;
-
       var fs = minDim * 0.105 * pos.sizeMult * scale;
 
       ctx.save();
       ctx.font = 'bold '+fs+'px '+FONT;
       ctx.textAlign='center'; ctx.textBaseline='middle';
-      /* 外层柔光 */
-      ctx.globalAlpha = alpha * 0.3;
-      ctx.fillStyle = ch.glow;
-      ctx.shadowColor = ch.glow; ctx.shadowBlur = glowBlur;
-      ctx.fillText(ch.t, pos.x, pos.y);
-      /* 主文字 */
       ctx.globalAlpha = alpha;
       ctx.fillStyle = ch.c;
-      ctx.shadowBlur = glowBlur * 0.5;
-      ctx.fillText(ch.t, pos.x, pos.y);
-      /* 白色内核 */
-      ctx.globalAlpha = alpha * 0.45;
-      ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = ch.c; ctx.shadowBlur = 8;
       ctx.fillText(ch.t, pos.x, pos.y);
       ctx.restore();
     });
 
-    /* 全部点亮后：科技感细线光带 + 双副标题（轻柔淡入）*/
+    /* 全部点亮后：双副标题（无光带无阴影）*/
     var allArrived = dt > ARRIVE_ALL;
     if(allArrived){
       var sinceAll = dt - ARRIVE_ALL;
-
-      /* 细线光带：从中心向两侧展开 */
-      if(sinceAll > 0.05){
-        var lineP = Math.min((sinceAll-0.05)/0.6, 1);
-        var lw = minDim*0.55 * (1 - Math.pow(1-lineP, 3));
-        var ly = cy + minDim*0.085;
-        var lg = ctx.createLinearGradient(cx-lw/2, 0, cx+lw/2, 0);
-        lg.addColorStop(0, 'rgba(77,141,255,0)');
-        lg.addColorStop(0.5, 'rgba(134,168,255,0.55)');
-        lg.addColorStop(1, 'rgba(77,141,255,0)');
-        ctx.save();
-        ctx.globalAlpha = lineP;
-        ctx.fillStyle = lg;
-        ctx.fillRect(cx-lw/2, ly, lw, 1.5);
-        ctx.restore();
-      }
 
       /* 顶部副标题 */
       if(sinceAll > 0.4){
         var topP = Math.min((sinceAll-0.4)/0.5, 1);
         ctx.save();
-        ctx.globalAlpha = topP * 0.65;
+        ctx.globalAlpha = topP * 0.7;
         ctx.font = 'bold '+minDim*0.024+'px "Microsoft YaHei",sans-serif';
         ctx.fillStyle = '#6db5ff';
-        ctx.shadowColor = '#3d7dff'; ctx.shadowBlur = 8;
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText('— 淡水鱼 · 不生吃 · 必须熟食 —', cx, cy - minDim*0.125);
         ctx.restore();
@@ -419,10 +381,9 @@ canvas{display:block;position:absolute;top:0;left:0}
       if(sinceAll > 0.6){
         var subP = Math.min((sinceAll-0.6)/0.5, 1);
         ctx.save();
-        ctx.globalAlpha = subP * 0.75;
+        ctx.globalAlpha = subP * 0.8;
         ctx.font = minDim*0.026+'px Arial,sans-serif';
         ctx.fillStyle = '#4d8dff';
-        ctx.shadowColor = '#4d8dff'; ctx.shadowBlur = 8;
         ctx.textAlign='center'; ctx.textBaseline='middle';
         ctx.fillText('R A I N B O W   T R O U T   ·   N O T   S A L M O N', cx, cy + minDim*0.125);
         ctx.restore();
