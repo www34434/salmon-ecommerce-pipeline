@@ -65,7 +65,7 @@ html,body{height:100%;overflow:hidden;background:#04060b;
    ═══════════════════════════════════════════════ */
 const P_BASE  = 4400;                 /* perspective 原生值 */
 const Z_FAR   = -7000;                /* 出生点 */
-const Z_NEAR  =  3200;                /* 消亡点（穿过相机平面） */
+const Z_NEAR  = -3500;                /* 消亡点：永远在远处，不接近 camera，屏幕投影半径永远 < 930px，避让 hero 安全区 */
 const T_CYCLE = 3.0;                  /* 单词单程寿命(s) → 6s 跑 2 整圈 */
 const DUR     = 6.0;                  /* 隧道完整周期（2 圈）*/
 const CYCLES  = 2;                    /* 整数圈 → 无缝 loop */
@@ -125,8 +125,11 @@ const HERO_CHARS = ['国','产','淡','水','三','文','鱼'];
 WORDS.forEach((word,i)=>{
   const a = i*GOLDEN + rnd(i*7+1)*0.8;
   const r = R_BASE + rnd(i*7+2)*R_SPAN;
-  const x = Math.cos(a)*r;
-  const y = Math.sin(a)*r*FLAT;
+  /* 强制最小半径，确保飞词近端也永远在 hero 安全区之外 */
+  const SAFE_R = 1100;  /* hero 区域半径约 1000，词轨道最小半径必须更大 */
+  const rClamped = Math.max(SAFE_R, r);
+  const x = Math.cos(a)*rClamped;
+  const y = Math.sin(a)*rClamped*FLAT;
   const phase = i/WORDS.length;
 
   const el = document.createElement('div');
@@ -164,17 +167,6 @@ function resizeCanvas(){
 }
 addEventListener('resize', resizeCanvas, {passive:true}); resizeCanvas();
 
-/* 10 发丝环 */
-const hair = [];
-for(let k=0;k<10;k++) hair.push({baseR:330+k*66, phase:k/10, thk:1+k*0.4});
-/* 56 尘埃流线 */
-const dust = [];
-for(let d=0;d<56;d++) dust.push({
-  angle:d*0.4+rnd(d*3)*0.6, r:100+rnd(d+50)*800,
-  zPhase:rnd(d+200), speed:0.8+rnd(d+300)*0.6,
-  len:40+rnd(d+400)*80
-});
-
 function drawDeco(t, merging){
   const W=innerWidth, H=innerHeight, cx=W/2, cy=H/2;
   dc.fillStyle='#060812'; dc.fillRect(0,0,W,H);
@@ -189,56 +181,6 @@ function drawDeco(t, merging){
     dc.fillRect(0,0,W,H);
     return;
   }
-
-  /* 隧道滚转 ±2.5°（装饰层与主舞台同步）*/
-  const tunnelRot = Math.sin(t*2*Math.PI) * 2.5*Math.PI/180;
-
-  /* ── 尘埃流线 ── */
-  dust.forEach(d=>{
-    const dz = ((t*0.15*d.speed+d.zPhase)%1+1)%1;
-    const z = Z_FAR + dz*(Z_NEAR-Z_FAR);
-    if(z<Z_FAR+200 || z>Z_NEAR-200) return;
-    const s = P_BASE/(P_BASE-z);
-    const drift = 0.5 + dz*1.35;
-    const rx = d.r*drift*Math.cos(d.angle);
-    const ry = d.r*drift*Math.sin(d.angle)*FLAT;
-    /* 应用滚转 */
-    const cosR=Math.cos(tunnelRot), sinR=Math.sin(tunnelRot);
-    const rx2=rx*cosR-ry*sinR, ry2=rx*sinR+ry*cosR;
-    const px=cx+rx2*s, py=cy+ry2*s;
-    const vx=rx2*s*0.02, vy=ry2*s*0.02;
-    dc.save();
-    dc.globalAlpha = lifeOpacity(dz)*0.4;
-    dc.strokeStyle='#4da6ff';
-    dc.lineWidth = Math.max(0.5, s*1.5);
-    dc.beginPath();
-    dc.moveTo(px-vx*d.len, py-vy*d.len);
-    dc.lineTo(px, py);
-    dc.stroke();
-    dc.restore();
-  });
-
-  /* ── 发丝环 ── */
-  hair.forEach(hr=>{
-    const hz = ((t/DUR*CYCLES + hr.phase)%1+1)%1;
-    const z = Z_FAR + hz*(Z_NEAR-Z_FAR);
-    if(z<Z_FAR+200 || z>Z_NEAR-200) return;
-    const s = P_BASE/(P_BASE-z);
-    const drift = 0.5 + hz*1.35;
-    dc.save();
-    dc.translate(cx,cy); dc.rotate(tunnelRot);
-    dc.globalAlpha = lifeOpacity(hz)*0.35;
-    dc.strokeStyle='#3d7dff';
-    dc.lineWidth = Math.max(0.3, hr.thk*s*0.6);
-    dc.beginPath();
-    for(let a=0;a<Math.PI*2;a+=0.12){
-      const ex = hr.baseR*drift*Math.cos(a)*s;
-      const ey = hr.baseR*drift*Math.sin(a)*FLAT*s;
-      if(a===0) dc.moveTo(ex,ey); else dc.lineTo(ex,ey);
-    }
-    dc.stroke();
-    dc.restore();
-  });
 
   /* ── 暗角 ── */
   const vg = dc.createRadialGradient(cx,cy,minDim*0.25, cx,cy,Math.max(W,H)*0.7);
@@ -304,7 +246,7 @@ function loop(now){
     }
 
     let z = (Z_FAR + Z_SPAN * u) * K;
-    const drift = 0.5 + u*1.35;
+    const drift = 1.0;  /* 恒定散开倍数，去除"射线分散" */
     let x = it.x * drift * K;
     let y = it.y * drift * K;
     let opacity = lifeOpacity(u);
@@ -316,17 +258,17 @@ function loop(now){
     const ci = Math.min(2, Math.floor(u*3));
     const col = it.isEmphasis ? C_EMP : C_LIGHT[ci];
 
-    /* 中央字标区让位 */
+    /* 中央字标区让位：完全隐藏飞入 hero 区域的词，避免盖住「国产淡水三文鱼」*/
     let centralDim = 1;
     const W_=innerWidth, H_=innerHeight;
     const heroCX = W_/2, heroCY = H_/2;
     const s = P_BASE/(P_BASE - (Z_FAR + Z_SPAN*u)*K);
     const px = heroCX + it.x*drift*K*s;
     const py = heroCY + it.y*drift*K*s;
-    const dxE2 = (px-heroCX)/(Math.min(W_,H_)*0.46);
-    const dyE2 = (py-heroCY)/(Math.min(W_,H_)*0.22);
+    const dxE2 = (px-heroCX)/(Math.min(W_,H_)*0.55);
+    const dyE2 = (py-heroCY)/(Math.min(W_,H_)*0.28);
     const dEll = Math.sqrt(dxE2*dxE2+dyE2*dyE2);
-    if(dEll < 1) centralDim = Math.max(0.22, dEll);
+    if(dEll < 1) centralDim = 0;  /* 中央椭圆区内词完全透明 */
     opacity *= centralDim;
 
     if(merging){
