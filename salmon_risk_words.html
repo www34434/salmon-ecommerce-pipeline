@@ -17,6 +17,7 @@ html,body{height:100%;overflow:hidden;background:#04060b;
   overflow:hidden;
   perspective:4400px;          /* 1920 原生 = 1100 × 4 */
   perspective-origin:50% 50%;
+  transform-style:preserve-3d; /* 确保 .word 的 3D transform 不越出本层 */
 }
 .word{
   position:absolute;left:50%;top:50%;
@@ -25,12 +26,13 @@ html,body{height:100%;overflow:hidden;background:#04060b;
   white-space:nowrap;pointer-events:none;
   will-change:transform,opacity,filter;
 }
-/* 前景层：隧道阶段半透明常驻，汇聚后点亮 */
+/* 前景层：隧道阶段半透明常驻，汇聚后点亮。显式最高层级，确保不被 .word 3D transform 穿透 */
 .hero{
-  position:fixed;inset:0;z-index:2;
+  position:fixed;inset:0;z-index:999;
   display:grid;place-content:center;text-align:center;
   pointer-events:none;opacity:.32;
   will-change:opacity,transform;
+  isolation:isolate;            /* 强制独立 stacking context */
 }
 .hero h1{
   font-size:clamp(32px,4.8vw,80px);
