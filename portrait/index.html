@@ -426,8 +426,11 @@ body::before {
   display: flex;
   align-items: flex-end;
   justify-content: center;
+  perspective: 1000px;
   transform-style: preserve-3d;
   animation: figure-float 4s ease-in-out infinite;
+  /* 混合模式放在父层：旋转时黑底依然保持透明，不会露出黑框 */
+  mix-blend-mode: screen;
 }
 
 .figure-img {
@@ -436,9 +439,9 @@ body::before {
   max-height: 100%;
   max-width: 100%;
   object-fit: contain;
-  /* 纯黑背景与面板融为一体，无可见黑框 */
-  mix-blend-mode: screen;
   filter: brightness(1.04) contrast(1.02);
+  /* 以脚底为轴心旋转，像展台上的立体模型 */
+  transform-origin: 50% 88%;
   transform-style: preserve-3d;
   will-change: transform;
   backface-visibility: visible;
@@ -867,6 +870,6 @@ body::before {
 </div>
 
 <script src="./_shared/js/echarts.min.js"></script>
-<script src="assets/charts.js?v=7"></script>
+<script src="assets/charts.js?v=8"></script>
 </body>
 </html>
