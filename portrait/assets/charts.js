@@ -1,4 +1,4 @@
-﻿(function() {
+(function() {
   'use strict';
 
   // ========== 模拟数据 ==========
@@ -110,9 +110,7 @@
         '<div class="figure-label">全息投影 · 3D MODEL｜拖动可旋转</div>' +
         '<div class="figure-badge">HOLOGRAM</div>' +
         '<div class="figure-img-box">' +
-          '<div class="figure-tilt">' +
-            '<img class="figure-img" src="assets/' + figureFile + '" alt="' + c.name + '">' +
-          '</div>' +
+          '<canvas class="figure-3d" id="figure3d"></canvas>' +
           '<div class="figure-platform"></div>' +
         '</div>' +
         '<div class="figure-halo"></div>' +
@@ -159,7 +157,7 @@
 
     // 生成全息粒子
     initFigureParticles();
-    initFigureDrag();
+    initFigure3D(c);
   }
 
   // ========== 生成标签云 ==========
@@ -290,65 +288,163 @@
     box.innerHTML = html;
   }
 
-  // ========== 鼠标拖动旋转人物 ==========
-  function initFigureDrag() {
+  // ========== 3D 立体人物（Three.js 浮雕网格，360° 拖动旋转） ==========
+  var fig3d = { ready: false };
+
+  function initFigure3D(c) {
     var box = document.querySelector('.figure-img-box');
-    var img = document.querySelector('.figure-img');
-    if (!box || !img) return;
-
-    var dragging = false;
-    var startX = 0, startY = 0, baseRotY = 0, baseRotX = 0, rotY = 0, rotX = 0;
-
-    function clamp(v, min, max) { return v < min ? min : (v > max ? max : v); }
-
-    function apply() {
-      img.style.transform = 'rotateY(' + rotY.toFixed(2) + 'deg) rotateX(' + rotX.toFixed(2) + 'deg)';
+    if (!box) return;
+    if (typeof THREE === 'undefined') {
+      // WebGL 不可用时的回退：静态透明人物图
+      box.insertAdjacentHTML('afterbegin',
+        '<div class="figure-tilt"><img class="figure-img" src="assets/' + c.figure + '" alt="' + c.name + '"></div>');
+      return;
     }
+    if (!fig3d.ready) setupFigure3D(box);
+    updateFigure3D(c);
+  }
 
-    // 松手后若停在大角度，缓慢回正到最近的复位位置
-    function settle() {
-      if (Math.abs(rotY) > 30 || Math.abs(rotX) > 12) {
-        rotY = clamp(rotY, -30, 30);
-        rotX = clamp(rotX, -12, 12);
-        apply();
-      }
-    }
+  function setupFigure3D(box) {
+    var canvas = document.getElementById('figure3d');
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputEncoding = THREE.sRGBEncoding;
 
+    var scene = new THREE.Scene();
+    var camera = new THREE.PerspectiveCamera(32, 1, 0.1, 30);
+    camera.position.set(0, 0, 3.9);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.85));
+    var key = new THREE.DirectionalLight(0xdff6ff, 0.6);
+    key.position.set(0.8, 1.2, 1.6);
+    scene.add(key);
+    var rim = new THREE.DirectionalLight(0x00f0ff, 0.35);
+    rim.position.set(-0.8, 0.4, -1.2);
+    scene.add(rim);
+
+    var group = new THREE.Group();
+    scene.add(group);
+
+    var material = new THREE.MeshLambertMaterial({
+      transparent: true,
+      alphaTest: 0.06,
+      side: THREE.DoubleSide
+    });
+
+    fig3d = {
+      ready: true, box: box, canvas: canvas, renderer: renderer, scene: scene,
+      camera: camera, group: group, material: material, mesh: null,
+      rotY: 0, rotX: 0, targetY: 0, targetX: 0,
+      dragging: false, lastX: 0, lastY: 0, lastMove: 0
+    };
+
+    // 拖动交互：水平拖动 360° 自由旋转，垂直拖动小角度俯仰
     box.addEventListener('pointerdown', function (e) {
-      dragging = true;
-      startX = e.clientX;
-      startY = e.clientY;
-      baseRotY = rotY;
-      baseRotX = rotX;
+      fig3d.dragging = true;
+      fig3d.lastX = e.clientX;
+      fig3d.lastY = e.clientY;
       box.classList.add('is-dragging');
-      if (box.setPointerCapture) {
-        try { box.setPointerCapture(e.pointerId); } catch (err) {}
-      }
+      if (box.setPointerCapture) { try { box.setPointerCapture(e.pointerId); } catch (err) {} }
       e.preventDefault();
     });
-
     box.addEventListener('pointermove', function (e) {
-      if (!dragging) return;
-      rotY = clamp(baseRotY + (e.clientX - startX) * 0.5, -45, 45);
-      rotX = clamp(baseRotX - (e.clientY - startY) * 0.18, -16, 16);
-      apply();
+      if (!fig3d.dragging) return;
+      var dx = e.clientX - fig3d.lastX, dy = e.clientY - fig3d.lastY;
+      fig3d.lastX = e.clientX;
+      fig3d.lastY = e.clientY;
+      fig3d.targetY += dx * 0.012;
+      fig3d.targetX = Math.max(-0.4, Math.min(0.4, fig3d.targetX + dy * 0.006));
+      fig3d.lastMove = Date.now();
     });
-
     function stop() {
-      if (!dragging) return;
-      dragging = false;
+      fig3d.dragging = false;
       box.classList.remove('is-dragging');
-      settle();
     }
     box.addEventListener('pointerup', stop);
     box.addEventListener('pointercancel', stop);
+    box.addEventListener('dblclick', function () { fig3d.targetY = 0; fig3d.targetX = 0; });
 
-    // 双击复位
-    box.addEventListener('dblclick', function () {
-      rotY = 0;
-      rotX = 0;
-      apply();
-    });
+    function resize() {
+      var w = box.clientWidth, h = box.clientHeight;
+      if (!w || !h) return;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // 渲染循环：阻尼跟随 + 空闲时展台式缓慢自转
+    (function loop() {
+      if (!document.body.contains(canvas)) return;
+      requestAnimationFrame(loop);
+      if (!fig3d.dragging && Date.now() - fig3d.lastMove > 2500) {
+        fig3d.targetY += 0.004;
+      }
+      fig3d.rotY += (fig3d.targetY - fig3d.rotY) * 0.12;
+      fig3d.rotX += (fig3d.targetX - fig3d.rotX) * 0.12;
+      group.rotation.y = fig3d.rotY;
+      group.rotation.x = fig3d.rotX;
+      renderer.render(scene, camera);
+    })();
+  }
+
+  function updateFigure3D(c) {
+    var img = new Image();
+    img.onload = function () {
+      // 收缩 alpha 边缘，去掉暗色毛边，生成纹理画布
+      var cv = document.createElement('canvas');
+      cv.width = img.width;
+      cv.height = img.height;
+      var ctx = cv.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      var d = ctx.getImageData(0, 0, cv.width, cv.height);
+      var p = d.data;
+      for (var i = 3; i < p.length; i += 4) {
+        var a = Math.max(0, Math.min(1, (p[i] / 255 - 0.18) / 0.62));
+        p[i] = Math.round(a * 255);
+      }
+      ctx.putImageData(d, 0, 0);
+
+      var tex = new THREE.CanvasTexture(cv);
+      tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = 4;
+
+      // 降采样 alpha 用于顶点位移（人物区域向前隆起）
+      var sw = 120, sh = Math.round(sw * img.height / img.width);
+      var sc = document.createElement('canvas');
+      sc.width = sw;
+      sc.height = sh;
+      var sctx = sc.getContext('2d');
+      sctx.drawImage(cv, 0, 0, sw, sh);
+      var sd = sctx.getImageData(0, 0, sw, sh).data;
+
+      var H = 2.1;
+      var W = H * img.width / img.height;
+      var geo = new THREE.PlaneGeometry(W, H, 90, 130);
+      var pos = geo.attributes.position;
+      for (var i = 0; i < pos.count; i++) {
+        var u = pos.getX(i) / W + 0.5;
+        var v = pos.getY(i) / H + 0.5;
+        var sx = Math.min(sw - 1, Math.max(0, Math.round(u * (sw - 1))));
+        var sy = Math.min(sh - 1, Math.max(0, Math.round((1 - v) * (sh - 1))));
+        var a = sd[(sy * sw + sx) * 4 + 3] / 255;
+        pos.setZ(i, 0.45 * Math.pow(a, 0.55));
+      }
+      geo.computeVertexNormals();
+
+      if (fig3d.mesh) {
+        fig3d.group.remove(fig3d.mesh);
+        fig3d.mesh.geometry.dispose();
+        if (fig3d.material.map) fig3d.material.map.dispose();
+      }
+      fig3d.material.map = tex;
+      fig3d.material.needsUpdate = true;
+      fig3d.mesh = new THREE.Mesh(geo, fig3d.material);
+      fig3d.mesh.position.y = 0.02;
+      fig3d.group.add(fig3d.mesh);
+    };
+    img.src = 'assets/' + c.figure;
   }
 
   // ========== 搜索 ==========
