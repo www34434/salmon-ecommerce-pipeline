@@ -1,4 +1,4 @@
-(function() {
+﻿(function() {
   'use strict';
 
   // ========== 模拟数据 ==========
@@ -107,11 +107,11 @@
 
       // 中栏：全息人物（页面正中央）
       '<aside class="figure-wrap">' +
-        '<div class="figure-label">全息投影 · 3D MODEL｜拖动可旋转</div>' +
+        '<div class="figure-label">全息投影 · 3D MODEL</div>' +
         '<div class="figure-badge">HOLOGRAM</div>' +
         '<div class="figure-img-box">' +
           '<div class="figure-tilt">' +
-            '<canvas class="figure-canvas" id="figureCanvas"></canvas>' +
+            '<img class="figure-img" src="assets/' + figureFile + '" alt="' + c.name + '">' +
           '</div>' +
           '<div class="figure-platform"></div>' +
         '</div>' +
@@ -159,7 +159,6 @@
 
     // 生成全息粒子
     initFigureParticles();
-    initFigureWarp(c);
   }
 
   // ========== 生成标签云 ==========
@@ -289,144 +288,6 @@
     }
     box.innerHTML = html;
   }
-
-  // ========== 3D 立体人物（照片逐像素三维形变渲染，拖动旋转，透明底） ==========
-  function initFigureWarp(c) {
-    var canvas = document.getElementById('figureCanvas');
-    var box = document.querySelector('.figure-img-box');
-    if (!canvas || !box) return;
-    var ctx2d = canvas.getContext('2d');
-
-    var img = new Image();
-    img.onload = function () {
-      canvas.width = img.width;
-      canvas.height = img.height;
-
-      // 降采样缓冲，保证逐像素形变的帧率
-      var DS = 2;
-      var sw = Math.round(img.width / DS);
-      var sh = Math.round(img.height / DS);
-      var sc = document.createElement('canvas');
-      sc.width = sw; sc.height = sh;
-      var sctx = sc.getContext('2d');
-      sctx.drawImage(img, 0, 0, sw, sh);
-      var sp = sctx.getImageData(0, 0, sw, sh).data;
-
-      var n = sw * sh;
-      var alpha = new Uint8Array(n);
-      for (var i = 0; i < n; i++) alpha[i] = sp[i * 4 + 3];
-
-      // 每行身体截面（中心 + 半径），行向平滑并填补空行
-      var rc = new Float32Array(sh), rr = new Float32Array(sh);
-      for (var y0 = 0; y0 < sh; y0++) {
-        var l = -1, r = -1, b0 = y0 * sw;
-        for (var x0 = 0; x0 < sw; x0++) if (alpha[b0 + x0] > 12) { if (l < 0) l = x0; r = x0; }
-        rc[y0] = l >= 0 ? (l + r) / 2 : 0;
-        rr[y0] = l >= 0 ? (r - l) / 2 : 0;
-      }
-      var sm = new Float32Array(sh), sr = new Float32Array(sh);
-      for (var y1 = 0; y1 < sh; y1++) {
-        var am = 0, cm = 0, ar = 0, cr = 0;
-        for (var k = -12; k <= 12; k++) {
-          var yy = y1 + k;
-          if (yy < 0 || yy >= sh || rr[yy] <= 0) continue;
-          am += rc[yy]; cm++; ar += rr[yy]; cr++;
-        }
-        sm[y1] = cm ? am / cm : sw / 2;
-        sr[y1] = cr ? (ar / cr) * 0.98 : 0;
-      }
-
-      var out = sctx.createImageData(sw, sh);
-      var op = out.data;
-      var zbuf = new Float32Array(n);
-
-      var theta = 0, target = 0;
-      var dragging = false, startPx = 0, baseT = 0;
-
-      function draw() {
-        if (Math.abs(theta) < 0.002) {
-          ctx2d.clearRect(0, 0, canvas.width, canvas.height);
-          ctx2d.drawImage(img, 0, 0);
-          return;
-        }
-        var cos = Math.cos(theta), sin = Math.sin(theta);
-        op.fill(0);
-        zbuf.fill(-1e9);
-        var step = sin > 0 ? 1 : -1;
-        for (var y = 0; y < sh; y++) {
-          var R = sr[y];
-          if (R < 2) continue;
-          var m = sm[y], base = y * sw;
-          var xa = Math.max(0, Math.floor(m - R)), xb = Math.min(sw - 1, Math.ceil(m + R));
-          for (var x = xa; x <= xb; x++) {
-            var si = base + x, a = alpha[si];
-            if (a < 8) continue;
-            var dx = (x - m) / R;
-            var z = Math.sqrt(Math.max(0, 1 - dx * dx)) * R;   // 椭圆截面前表面深度
-            var xp = Math.round(m + (x - m) * cos - z * sin);  // 绕垂直轴旋转后的屏幕 x
-            if (xp < 0 || xp >= sw) continue;
-            var oi = base + xp;
-            if (z > zbuf[oi]) {
-              zbuf[oi] = z;
-              var s4 = si * 4, o4 = oi * 4;
-              op[o4] = sp[s4]; op[o4 + 1] = sp[s4 + 1]; op[o4 + 2] = sp[s4 + 2]; op[o4 + 3] = a;
-            }
-            var xq = xp + step;
-            if (xq >= 0 && xq < sw) {
-              var oi2 = base + xq;
-              if (z > zbuf[oi2]) {
-                zbuf[oi2] = z;
-                var s4b = si * 4, o4b = oi2 * 4;
-                op[o4b] = sp[s4b]; op[o4b + 1] = sp[s4b + 1]; op[o4b + 2] = sp[s4b + 2]; op[o4b + 3] = a;
-              }
-            }
-          }
-        }
-        sctx.putImageData(out, 0, 0);
-        ctx2d.clearRect(0, 0, canvas.width, canvas.height);
-        ctx2d.imageSmoothingEnabled = true;
-        ctx2d.drawImage(sc, 0, 0, canvas.width, canvas.height);
-      }
-
-      // 阻尼跟随 + 持续渲染循环（仅在角度变化时重绘）
-      (function tick() {
-        if (!document.body.contains(canvas)) return;
-        var d = target - theta;
-        if (Math.abs(d) > 0.0004) {
-          theta += d * 0.18;
-          draw();
-        }
-        requestAnimationFrame(tick);
-      })();
-
-      // 拖动旋转：水平拖动控制转角，松手缓慢回正，双击复位
-      box.addEventListener('pointerdown', function (e) {
-        dragging = true;
-        startPx = e.clientX;
-        baseT = target;
-        box.classList.add('is-dragging');
-        if (box.setPointerCapture) { try { box.setPointerCapture(e.pointerId); } catch (err) {} }
-        e.preventDefault();
-      });
-      box.addEventListener('pointermove', function (e) {
-        if (!dragging) return;
-        target = Math.max(-0.55, Math.min(0.55, baseT + (e.clientX - startPx) * 0.0035));
-      });
-      function stop() {
-        if (!dragging) return;
-        dragging = false;
-        box.classList.remove('is-dragging');
-        target = 0;
-      }
-      box.addEventListener('pointerup', stop);
-      box.addEventListener('pointercancel', stop);
-      box.addEventListener('dblclick', function () { target = 0; });
-
-      draw();
-    };
-    img.src = 'assets/' + c.figure;
-  }
-
   // ========== 搜索 ==========
   document.getElementById('searchInput').addEventListener('input', function() {
     renderCustomerList(this.value);
