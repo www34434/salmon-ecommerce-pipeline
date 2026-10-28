@@ -107,7 +107,7 @@
 
       // 中栏：全息人物（页面正中央）
       '<aside class="figure-wrap">' +
-        '<div class="figure-label">全息投影 · 3D MODEL｜点击可旋转</div>' +
+        '<div class="figure-label">全息投影 · 3D MODEL｜拖动可旋转</div>' +
         '<div class="figure-badge">HOLOGRAM</div>' +
         '<div class="figure-img-box">' +
           '<div class="figure-tilt">' +
@@ -159,7 +159,7 @@
 
     // 生成全息粒子
     initFigureParticles();
-    initFigureClick();
+    initFigureDrag();
   }
 
   // ========== 生成标签云 ==========
@@ -290,17 +290,64 @@
     box.innerHTML = html;
   }
 
-  // ========== 点击旋转人物（点左半边左转、右半边右转，再点回正） ==========
-  function initFigureClick() {
+  // ========== 拖动旋转人物（绕脚底轴 3D 侧转，松手缓慢回正，双击复位） ==========
+  function initFigureDrag() {
     var box = document.querySelector('.figure-img-box');
     var img = document.querySelector('.figure-img');
     if (!box || !img) return;
-    var rotY = 0;
-    box.addEventListener('click', function (e) {
-      var r = box.getBoundingClientRect();
-      var target = ((e.clientX - r.left) < r.width / 2) ? -26 : 26;
-      rotY = (rotY === target) ? 0 : target;
-      img.style.transform = 'rotateY(' + rotY + 'deg)';
+
+    var dragging = false;
+    var startX = 0, startY = 0, baseRotY = 0, baseRotX = 0, rotY = 0, rotX = 0;
+
+    function clamp(v, min, max) { return v < min ? min : (v > max ? max : v); }
+
+    function apply() {
+      img.style.transform = 'rotateY(' + rotY.toFixed(2) + 'deg) rotateX(' + rotX.toFixed(2) + 'deg)';
+    }
+
+    // 松手后若停在大角度，缓慢回正到最近的复位位置
+    function settle() {
+      if (Math.abs(rotY) > 30 || Math.abs(rotX) > 12) {
+        rotY = clamp(rotY, -30, 30);
+        rotX = clamp(rotX, -12, 12);
+        apply();
+      }
+    }
+
+    box.addEventListener('pointerdown', function (e) {
+      dragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      baseRotY = rotY;
+      baseRotX = rotX;
+      box.classList.add('is-dragging');
+      if (box.setPointerCapture) {
+        try { box.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+      e.preventDefault();
+    });
+
+    box.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      rotY = clamp(baseRotY + (e.clientX - startX) * 0.5, -45, 45);
+      rotX = clamp(baseRotX - (e.clientY - startY) * 0.18, -16, 16);
+      apply();
+    });
+
+    function stop() {
+      if (!dragging) return;
+      dragging = false;
+      box.classList.remove('is-dragging');
+      settle();
+    }
+    box.addEventListener('pointerup', stop);
+    box.addEventListener('pointercancel', stop);
+
+    // 双击复位
+    box.addEventListener('dblclick', function () {
+      rotY = 0;
+      rotX = 0;
+      apply();
     });
   }
 
