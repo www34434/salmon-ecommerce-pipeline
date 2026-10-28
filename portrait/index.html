@@ -447,6 +447,16 @@ body::before {
 
 .figure-img-box.is-dragging .figure-img { transition: none; }
 
+/* 3D 形变人物画布（逐像素三维旋转渲染，透明底） */
+.figure-canvas {
+  position: relative;
+  z-index: 3;
+  max-width: 100%;
+  max-height: 100%;
+  display: block;
+  filter: drop-shadow(0 0 16px rgba(0, 240, 255, 0.25)) brightness(1.05) contrast(1.05);
+}
+
 @keyframes figure-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
@@ -867,6 +877,6 @@ body::before {
 </div>
 
 <script src="./_shared/js/echarts.min.js"></script>
-<script src="assets/charts.js?v=12"></script>
+<script src="assets/charts.js?v=13"></script>
 </body>
 </html>
