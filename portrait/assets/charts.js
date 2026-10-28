@@ -1,4 +1,4 @@
-﻿(function() {
+(function() {
   'use strict';
 
   // ========== 模拟数据 ==========
@@ -107,10 +107,12 @@
 
       // 中栏：全息人物（页面正中央）
       '<aside class="figure-wrap">' +
-        '<div class="figure-label">全息投影 · 3D MODEL</div>' +
+        '<div class="figure-label">全息投影 · 3D MODEL｜拖动可旋转</div>' +
         '<div class="figure-badge">HOLOGRAM</div>' +
         '<div class="figure-img-box">' +
-          '<img class="figure-img" src="assets/' + figureFile + '" alt="' + c.name + '">' +
+          '<div class="figure-tilt">' +
+            '<img class="figure-img" src="assets/' + figureFile + '" alt="' + c.name + '">' +
+          '</div>' +
           '<div class="figure-platform"></div>' +
         '</div>' +
         '<div class="figure-halo"></div>' +
@@ -157,6 +159,7 @@
 
     // 生成全息粒子
     initFigureParticles();
+    initFigureDrag();
   }
 
   // ========== 生成标签云 ==========
@@ -285,6 +288,67 @@
       html += '<span style="left:' + left + '%;bottom:' + (10 + Math.random() * 15) + '%;width:' + size + 'px;height:' + size + 'px;animation-delay:' + delay + 's;animation-duration:' + dur + 's"></span>';
     }
     box.innerHTML = html;
+  }
+
+  // ========== 鼠标拖动旋转人物 ==========
+  function initFigureDrag() {
+    var box = document.querySelector('.figure-img-box');
+    var img = document.querySelector('.figure-img');
+    if (!box || !img) return;
+
+    var dragging = false;
+    var startX = 0, startY = 0, baseRotY = 0, baseRotX = 0, rotY = 0, rotX = 0;
+
+    function clamp(v, min, max) { return v < min ? min : (v > max ? max : v); }
+
+    function apply() {
+      img.style.transform = 'rotateY(' + rotY.toFixed(2) + 'deg) rotateX(' + rotX.toFixed(2) + 'deg)';
+    }
+
+    // 松手后若停在大角度，缓慢回正到最近的复位位置
+    function settle() {
+      if (Math.abs(rotY) > 30 || Math.abs(rotX) > 12) {
+        rotY = clamp(rotY, -30, 30);
+        rotX = clamp(rotX, -12, 12);
+        apply();
+      }
+    }
+
+    box.addEventListener('pointerdown', function (e) {
+      dragging = true;
+      startX = e.clientX;
+      startY = e.clientY;
+      baseRotY = rotY;
+      baseRotX = rotX;
+      box.classList.add('is-dragging');
+      if (box.setPointerCapture) {
+        try { box.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+      e.preventDefault();
+    });
+
+    box.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      rotY = clamp(baseRotY + (e.clientX - startX) * 0.4, -60, 60);
+      rotX = clamp(baseRotX - (e.clientY - startY) * 0.18, -15, 15);
+      apply();
+    });
+
+    function stop() {
+      if (!dragging) return;
+      dragging = false;
+      box.classList.remove('is-dragging');
+      settle();
+    }
+    box.addEventListener('pointerup', stop);
+    box.addEventListener('pointercancel', stop);
+
+    // 双击复位
+    box.addEventListener('dblclick', function () {
+      rotY = 0;
+      rotX = 0;
+      apply();
+    });
   }
 
   // ========== 搜索 ==========
