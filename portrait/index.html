@@ -447,6 +447,16 @@ body::before {
 
 .figure-img-box.is-dragging .figure-img { transition: none; }
 
+/* 3D 立体人物画布（Three.js 渲染，可 360° 拖动） */
+.figure-3d {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 2;
+}
+
 @keyframes figure-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
@@ -866,7 +876,8 @@ body::before {
   三文鱼门店客户全息画像系统 · 数据仅供演示
 </div>
 
+<script src="./_shared/js/three.min.js"></script>
 <script src="./_shared/js/echarts.min.js"></script>
-<script src="assets/charts.js?v=9"></script>
+<script src="assets/charts.js?v=10"></script>
 </body>
 </html>
