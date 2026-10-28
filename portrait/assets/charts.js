@@ -307,9 +307,9 @@
 
     // 松手后若停在大角度，缓慢回正到最近的复位位置
     function settle() {
-      if (Math.abs(rotY) > 30 || Math.abs(rotX) > 12) {
-        rotY = clamp(rotY, -30, 30);
-        rotX = clamp(rotX, -12, 12);
+      if (Math.abs(rotY) > 26 || Math.abs(rotX) > 10) {
+        rotY = clamp(rotY, -26, 26);
+        rotX = clamp(rotX, -10, 10);
         apply();
       }
     }
@@ -329,8 +329,8 @@
 
     box.addEventListener('pointermove', function (e) {
       if (!dragging) return;
-      rotY = clamp(baseRotY + (e.clientX - startX) * 0.4, -60, 60);
-      rotX = clamp(baseRotX - (e.clientY - startY) * 0.18, -15, 15);
+      rotY = clamp(baseRotY + (e.clientX - startX) * 0.42, -40, 40);
+      rotX = clamp(baseRotX - (e.clientY - startY) * 0.16, -14, 14);
       apply();
     });
 
