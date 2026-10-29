@@ -135,7 +135,7 @@
           '<div class="order-list" id="orderList"></div>' +
         '</div>' +
         '<div class="panel">' +
-          '<div class="panel-header"><div class="panel-title">客户标签</div><div class="panel-extra">AI 生成</div></div>' +
+          '<div class="panel-header"><div class="panel-title">客户标签</div><div class="panel-extra">智能分析</div></div>' +
           '<div class="tag-cloud">' + generateTagCloud(c) + '</div>' +
           '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)">' +
             '<div style="font-size:13px;color:var(--muted);margin-bottom:8px">复购概率预测</div>' +
