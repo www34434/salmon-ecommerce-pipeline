@@ -111,7 +111,7 @@
         '<div class="figure-badge">HOLOGRAM</div>' +
         '<div class="figure-img-box">' +
           '<div class="figure-tilt">' +
-            '<img class="figure-img" src="assets/' + figureFile + '" alt="' + c.name + '">' +
+            '<img class="figure-img" src="assets/' + figureFile + '?v=2" alt="' + c.name + '">' +
           '</div>' +
           '<div class="figure-platform"></div>' +
         '</div>' +
