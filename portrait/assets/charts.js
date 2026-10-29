@@ -3,16 +3,16 @@
 
   // ========== 模拟数据 ==========
   var customers = [
-    { id: 'C-001', name: '张女士', age: 28, gender: '女', city: 'A市', level: 'VIP', score: 92, tags: ['高频消费', '刺身偏好', '午市'], orders: 47, totalSpend: 12860, lastVisit: '今天', avgPrice: 273, frequency: '每周3次', figure: 'young-female.webp' },
-    { id: 'C-002', name: '李先生', age: 35, gender: '男', city: 'B市', level: 'SVIP', score: 88, tags: ['商务宴请', '晚市', '高端'], orders: 32, totalSpend: 21500, lastVisit: '昨天', avgPrice: 402, frequency: '每周1次', figure: 'middle-male.webp' },
-    { id: 'C-003', name: '王小姐', age: 24, gender: '女', city: 'A市', level: '普通', score: 65, tags: ['新客', '外卖'], orders: 5, totalSpend: 890, lastVisit: '3天前', avgPrice: 178, frequency: '每月1次', figure: 'c003-female.webp' },
-    { id: 'C-004', name: '陈先生', age: 42, gender: '男', city: 'C市', level: 'VIP', score: 85, tags: ['家庭聚餐', '周末'], orders: 28, totalSpend: 15400, lastVisit: '2天前', avgPrice: 550, frequency: '每两周1次', figure: 'c004-male.webp' },
-    { id: 'C-005', name: '刘女士', age: 31, gender: '女', city: 'A市', level: 'SVIP', score: 95, tags: ['忠实客户', '推荐达人'], orders: 68, totalSpend: 28900, lastVisit: '今天', avgPrice: 425, frequency: '每周4次', figure: 'c005-female.webp' },
-    { id: 'C-006', name: '赵先生', age: 29, gender: '男', city: 'B市', level: '普通', score: 72, tags: ['午市', '快餐'], orders: 15, totalSpend: 3200, lastVisit: '5天前', avgPrice: 213, frequency: '每周2次', figure: 'young-male.webp' },
-    { id: 'C-007', name: '孙女士', age: 38, gender: '女', city: 'C市', level: 'VIP', score: 78, tags: ['健康轻食', '沙拉'], orders: 22, totalSpend: 7800, lastVisit: '1天前', avgPrice: 355, frequency: '每周2次', figure: 'middle-female.webp' },
-    { id: 'C-008', name: '周先生', age: 45, gender: '男', city: 'A市', level: 'SVIP', score: 91, tags: ['商务', '高端', '收藏'], orders: 41, totalSpend: 19800, lastVisit: '今天', avgPrice: 483, frequency: '每周2次', figure: 'c008-male.webp' },
-    { id: 'C-009', name: '吴小姐', age: 26, gender: '女', city: 'B市', level: '普通', score: 58, tags: ['尝鲜', '一次客'], orders: 2, totalSpend: 320, lastVisit: '2周前', avgPrice: 160, frequency: '仅1次', figure: 'c009-female.webp' },
-    { id: 'C-010', name: '郑先生', age: 33, gender: '男', city: 'C市', level: 'VIP', score: 82, tags: ['家庭', '儿童餐'], orders: 19, totalSpend: 8900, lastVisit: '4天前', avgPrice: 468, frequency: '每月2次', figure: 'c010-male.webp' }
+    { id: 'C-001', name: '张女士', age: 28, gender: '女', city: 'A市', level: 'VIP', score: 92, tags: ['高频消费', '刺身偏好', '午市'], orders: 47, totalSpend: 12860, lastVisit: '今天', avgPrice: 273, frequency: '每周3次', figure: 'young-female.jpg' },
+    { id: 'C-002', name: '李先生', age: 35, gender: '男', city: 'B市', level: 'SVIP', score: 88, tags: ['商务宴请', '晚市', '高端'], orders: 32, totalSpend: 21500, lastVisit: '昨天', avgPrice: 402, frequency: '每周1次', figure: 'middle-male.jpg' },
+    { id: 'C-003', name: '王小姐', age: 24, gender: '女', city: 'A市', level: '普通', score: 65, tags: ['新客', '外卖'], orders: 5, totalSpend: 890, lastVisit: '3天前', avgPrice: 178, frequency: '每月1次', figure: 'c003-female.jpg' },
+    { id: 'C-004', name: '陈先生', age: 42, gender: '男', city: 'C市', level: 'VIP', score: 85, tags: ['家庭聚餐', '周末'], orders: 28, totalSpend: 15400, lastVisit: '2天前', avgPrice: 550, frequency: '每两周1次', figure: 'c004-male.jpg' },
+    { id: 'C-005', name: '刘女士', age: 31, gender: '女', city: 'A市', level: 'SVIP', score: 95, tags: ['忠实客户', '推荐达人'], orders: 68, totalSpend: 28900, lastVisit: '今天', avgPrice: 425, frequency: '每周4次', figure: 'c005-female.jpg' },
+    { id: 'C-006', name: '赵先生', age: 29, gender: '男', city: 'B市', level: '普通', score: 72, tags: ['午市', '快餐'], orders: 15, totalSpend: 3200, lastVisit: '5天前', avgPrice: 213, frequency: '每周2次', figure: 'young-male.jpg' },
+    { id: 'C-007', name: '孙女士', age: 38, gender: '女', city: 'C市', level: 'VIP', score: 78, tags: ['健康轻食', '沙拉'], orders: 22, totalSpend: 7800, lastVisit: '1天前', avgPrice: 355, frequency: '每周2次', figure: 'middle-female.jpg' },
+    { id: 'C-008', name: '周先生', age: 45, gender: '男', city: 'A市', level: 'SVIP', score: 91, tags: ['商务', '高端', '收藏'], orders: 41, totalSpend: 19800, lastVisit: '今天', avgPrice: 483, frequency: '每周2次', figure: 'c008-male.jpg' },
+    { id: 'C-009', name: '吴小姐', age: 26, gender: '女', city: 'B市', level: '普通', score: 58, tags: ['尝鲜', '一次客'], orders: 2, totalSpend: 320, lastVisit: '2周前', avgPrice: 160, frequency: '仅1次', figure: 'c009-female.jpg' },
+    { id: 'C-010', name: '郑先生', age: 33, gender: '男', city: 'C市', level: 'VIP', score: 82, tags: ['家庭', '儿童餐'], orders: 19, totalSpend: 8900, lastVisit: '4天前', avgPrice: 468, frequency: '每月2次', figure: 'c010-male.jpg' }
   ];
 
   var currentCustomer = customers[0];
@@ -110,9 +110,7 @@
         '<div class="figure-label">全息投影 · 3D MODEL</div>' +
         '<div class="figure-badge">HOLOGRAM</div>' +
         '<div class="figure-img-box">' +
-          '<div class="figure-tilt">' +
-            '<img class="figure-img" src="assets/' + figureFile + '?v=2" alt="' + c.name + '">' +
-          '</div>' +
+          '<img class="figure-img" src="assets/' + figureFile + '" alt="' + c.name + '">' +
           '<div class="figure-platform"></div>' +
         '</div>' +
         '<div class="figure-halo"></div>' +
@@ -135,7 +133,7 @@
           '<div class="order-list" id="orderList"></div>' +
         '</div>' +
         '<div class="panel">' +
-          '<div class="panel-header"><div class="panel-title">客户标签</div><div class="panel-extra">智能分析</div></div>' +
+          '<div class="panel-header"><div class="panel-title">客户标签</div><div class="panel-extra">AI 生成</div></div>' +
           '<div class="tag-cloud">' + generateTagCloud(c) + '</div>' +
           '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)">' +
             '<div style="font-size:13px;color:var(--muted);margin-bottom:8px">复购概率预测</div>' +
@@ -288,6 +286,7 @@
     }
     box.innerHTML = html;
   }
+
   // ========== 搜索 ==========
   document.getElementById('searchInput').addEventListener('input', function() {
     renderCustomerList(this.value);
