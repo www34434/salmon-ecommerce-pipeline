@@ -302,3 +302,88 @@
     if (charts.time) charts.time.resize();
   });
 })();
+
+// ========== 神经网络节点背景（Cerebrium 风格，伪3D 投影） ==========
+(function () {
+  var cv = document.getElementById('neuralBg');
+  if (!cv) return;
+  var ctx = cv.getContext('2d');
+  var W = 0, H = 0, dpr = 1, nodes = [], mouse = { x: -9999, y: -9999 };
+  var FOCAL = 420, LINK = 150;
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function makeNodes() {
+    nodes = [];
+    var n = Math.max(50, Math.min(120, Math.round(W * H / 16000)));
+    for (var i = 0; i < n; i++) {
+      nodes.push({
+        x: Math.random() * W, y: Math.random() * H,
+        z: Math.random() * 600,
+        vx: (Math.random() - 0.5) * 0.18,
+        vy: (Math.random() - 0.5) * 0.18,
+        vz: (Math.random() - 0.5) * 0.35,
+        ph: Math.random() * Math.PI * 2
+      });
+    }
+  }
+
+  window.addEventListener('mousemove', function (e) { mouse.x = e.clientX; mouse.y = e.clientY; });
+  window.addEventListener('mouseout', function () { mouse.x = -9999; mouse.y = -9999; });
+
+  function tick(t) {
+    ctx.clearRect(0, 0, W, H);
+    var i, j, p, q;
+    for (i = 0; i < nodes.length; i++) {
+      p = nodes[i];
+      p.x += p.vx + Math.sin(t / 2600 + p.ph) * 0.12;
+      p.y += p.vy + Math.cos(t / 3100 + p.ph) * 0.10;
+      p.z += p.vz;
+      if (p.z < 0) p.z = 600; if (p.z > 600) p.z = 0;
+      if (p.x < -40) p.x = W + 40; if (p.x > W + 40) p.x = -40;
+      if (p.y < -40) p.y = H + 40; if (p.y > H + 40) p.y = -40;
+      var dx = p.x - mouse.x, dy = p.y - mouse.y, d2 = dx * dx + dy * dy;
+      if (d2 < 19600 && d2 > 0.01) {
+        var d = Math.sqrt(d2), f = (140 - d) / 140 * 0.6;
+        p.x += dx / d * f; p.y += dy / d * f;
+      }
+      var s = FOCAL / (FOCAL + p.z);
+      p._sx = (p.x - W / 2) * s + W / 2;
+      p._sy = (p.y - H / 2) * s + H / 2;
+      p._r = 1.1 + s * 1.7;
+      p._a = 0.25 + s * 0.5;
+    }
+    ctx.lineWidth = 1;
+    for (i = 0; i < nodes.length; i++) {
+      p = nodes[i];
+      for (j = i + 1; j < nodes.length; j++) {
+        q = nodes[j];
+        var ddx = p._sx - q._sx, ddy = p._sy - q._sy;
+        var dd = ddx * ddx + ddy * ddy;
+        if (dd < LINK * LINK) {
+          var la = (1 - Math.sqrt(dd) / LINK) * 0.28 * Math.min(p._a, q._a);
+          ctx.strokeStyle = 'rgba(0,240,255,' + la.toFixed(3) + ')';
+          ctx.beginPath(); ctx.moveTo(p._sx, p._sy); ctx.lineTo(q._sx, q._sy); ctx.stroke();
+        }
+      }
+    }
+    for (i = 0; i < nodes.length; i++) {
+      p = nodes[i];
+      ctx.fillStyle = 'rgba(0,240,255,' + (p._a * 0.10).toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(p._sx, p._sy, p._r * 3.2, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = 'rgba(170,250,255,' + p._a.toFixed(3) + ')';
+      ctx.beginPath(); ctx.arc(p._sx, p._sy, p._r, 0, 6.2832); ctx.fill();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  resize(); makeNodes();
+  window.addEventListener('resize', function () { resize(); makeNodes(); });
+  requestAnimationFrame(tick);
+})();
