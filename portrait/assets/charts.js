@@ -77,75 +77,75 @@
     var figureDesc = c.tags.slice(0, 3).join('/') + ' · ' + c.city + ' · ' + c.level + '会员';
 
     var mainHtml =
-      // 左栏：身份信息 + 关键指标 + 消费偏好
-      '<div class="stage-left">' +
-        '<div class="profile-header">' +
-          '<div class="profile-basic">' +
-            '<div class="profile-avatar-lg" style="background:linear-gradient(135deg,' + levelColor + ',' + levelColor + '88)">' + c.name[0] + '</div>' +
-            '<div>' +
-              '<div class="profile-name">' + c.name + '</div>' +
-              '<div style="font-size:13px;color:var(--muted);margin-top:4px">' + c.age + '岁 · ' + c.gender + ' · ' + c.city + ' · ' + c.level + '会员</div>' +
-              '<div class="profile-tags">' + tagsHtml + '</div>' +
-            '</div>' +
+      // Hero：左侧文案 + 右侧全息人物（Cerebrium 首页风格）
+      '<section class="hero">' +
+        '<div class="hero-copy">' +
+          '<div class="hero-eyebrow">SALMON STORE · CUSTOMER INTELLIGENCE</div>' +
+          '<h1 class="hero-title">' + c.name + '<small>客户全息画像 · ' + c.id + '</small></h1>' +
+          '<p class="hero-sub">' + c.age + '岁 · ' + c.gender + ' · ' + c.city + ' · ' + c.level + '会员 · 最近到店 ' + c.lastVisit + '</p>' +
+          '<div class="profile-tags">' + tagsHtml + '</div>' +
+          '<div class="hero-cta">' +
+            '<button class="btn btn-pink">发送优惠券</button>' +
+            '<button class="btn btn-ghost">导出画像</button>' +
           '</div>' +
-          '<div class="profile-actions">' +
-            '<button class="btn btn-outline">导出画像</button>' +
-            '<button class="btn btn-primary">发送优惠券</button>' +
+          '<div class="hero-stats">' +
+            '<div class="hstat"><div class="hstat-value">' + c.orders + '</div><div class="hstat-label">累计订单</div><div class="trend up">↑ 12% 较上月</div></div>' +
+            '<div class="hstat"><div class="hstat-value">¥' + (c.totalSpend / 10000).toFixed(1) + 'w</div><div class="hstat-label">累计消费</div><div class="trend up">↑ 8% 较上月</div></div>' +
+            '<div class="hstat"><div class="hstat-value">¥' + c.avgPrice + '</div><div class="hstat-label">客单价</div><div class="trend up">↑ 5% 较上月</div></div>' +
+            '<div class="hstat"><div class="hstat-value">' + c.frequency + '</div><div class="hstat-label">到店频次</div><div class="trend" style="color:var(--muted)">复购概率 ' + c.score + '%</div></div>' +
           '</div>' +
         '</div>' +
-        '<div class="stats-grid">' +
-          '<div class="stat-card"><div class="label">📊 累计订单</div><div class="value">' + c.orders + '</div><div class="trend up">↑ 12% 较上月</div></div>' +
-          '<div class="stat-card"><div class="label">💰 累计消费</div><div class="value">¥' + (c.totalSpend / 10000).toFixed(1) + 'w</div><div class="trend up">↑ 8% 较上月</div></div>' +
-          '<div class="stat-card"><div class="label">🍣 客单价</div><div class="value">¥' + c.avgPrice + '</div><div class="trend up">↑ 5% 较上月</div></div>' +
-          '<div class="stat-card"><div class="label">📅 最近到店</div><div class="value">' + c.lastVisit + '</div><div class="trend" style="color:var(--muted)">' + c.frequency + '</div></div>' +
-        '</div>' +
-        '<div class="panel">' +
-          '<div class="panel-header"><div class="panel-title">消费偏好雷达</div><div class="panel-extra">近90天</div></div>' +
-          '<div id="chartRadar" class="chart-container"></div>' +
-        '</div>' +
-      '</div>' +
 
-      // 中栏：全息人物（页面正中央）
-      '<aside class="figure-wrap">' +
-        '<div class="figure-label">全息投影 · 3D MODEL</div>' +
-        '<div class="figure-badge">HOLOGRAM</div>' +
-        '<div class="figure-img-box">' +
-          '<img class="figure-img" src="assets/' + figureFile + '" alt="' + c.name + '">' +
-          '<div class="figure-platform"></div>' +
-        '</div>' +
-        '<div class="figure-halo"></div>' +
-        '<div class="figure-particles" id="figureParticles"></div>' +
-        '<div class="figure-info">' +
-          '<div class="figure-name">' + c.name + '</div>' +
-          '<div class="figure-desc">' + figureDesc + '</div>' +
-          '<div class="figure-id">ID: ' + c.id + '</div>' +
-        '</div>' +
-      '</aside>' +
+        // 右侧：全息人物
+        '<aside class="figure-wrap">' +
+          '<div class="figure-label">全息投影 · 3D MODEL</div>' +
+          '<div class="figure-badge">HOLOGRAM</div>' +
+          '<div class="figure-img-box">' +
+            '<img class="figure-img" src="assets/' + figureFile + '" alt="' + c.name + '">' +
+            '<div class="figure-platform"></div>' +
+          '</div>' +
+          '<div class="figure-halo"></div>' +
+          '<div class="figure-particles" id="figureParticles"></div>' +
+          '<div class="figure-info">' +
+            '<div class="figure-name">' + c.name + '</div>' +
+            '<div class="figure-desc">' + figureDesc + '</div>' +
+            '<div class="figure-id">ID: ' + c.id + '</div>' +
+          '</div>' +
+        '</aside>' +
+      '</section>' +
 
-      // 右栏：时段分布 + 购买记录 + 标签
-      '<div class="stage-right">' +
-        '<div class="panel">' +
-          '<div class="panel-header"><div class="panel-title">消费时段分布</div><div class="panel-extra">近30天</div></div>' +
-          '<div id="chartTime" class="time-chart"></div>' +
-        '</div>' +
-        '<div class="panel">' +
-          '<div class="panel-header"><div class="panel-title">最近购买记录</div><div class="panel-extra">共 ' + c.orders + ' 单</div></div>' +
-          '<div class="order-list" id="orderList"></div>' +
-        '</div>' +
-        '<div class="panel">' +
-          '<div class="panel-header"><div class="panel-title">客户标签</div><div class="panel-extra">AI 生成</div></div>' +
-          '<div class="tag-cloud">' + generateTagCloud(c) + '</div>' +
-          '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)">' +
-            '<div style="font-size:13px;color:var(--muted);margin-bottom:8px">复购概率预测</div>' +
-            '<div style="display:flex;align-items:center;gap:12px">' +
-              '<div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">' +
-                '<div style="width:' + c.score + '%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px"></div>' +
+      // Insights：消费行为深度解析
+      '<section class="insights">' +
+        '<div class="section-eyebrow">CUSTOMER INSIGHTS</div>' +
+        '<h2 class="section-title">消费行为深度解析</h2>' +
+        '<div class="insights-grid">' +
+          '<div class="panel">' +
+            '<div class="panel-header"><div class="panel-title">消费偏好雷达</div><div class="panel-extra">近90天</div></div>' +
+            '<div id="chartRadar" class="chart-container"></div>' +
+          '</div>' +
+          '<div class="panel">' +
+            '<div class="panel-header"><div class="panel-title">消费时段分布</div><div class="panel-extra">近30天</div></div>' +
+            '<div id="chartTime" class="time-chart"></div>' +
+          '</div>' +
+          '<div class="panel">' +
+            '<div class="panel-header"><div class="panel-title">最近购买记录</div><div class="panel-extra">共 ' + c.orders + ' 单</div></div>' +
+            '<div class="order-list" id="orderList"></div>' +
+          '</div>' +
+          '<div class="panel">' +
+            '<div class="panel-header"><div class="panel-title">客户标签</div><div class="panel-extra">智能分析</div></div>' +
+            '<div class="tag-cloud">' + generateTagCloud(c) + '</div>' +
+            '<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--rule)">' +
+              '<div style="font-size:13px;color:var(--muted);margin-bottom:8px">复购概率预测</div>' +
+              '<div style="display:flex;align-items:center;gap:12px">' +
+                '<div style="flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">' +
+                  '<div style="width:' + c.score + '%;height:100%;background:linear-gradient(90deg,var(--pink),#ff8fab);border-radius:4px"></div>' +
+                '</div>' +
+                '<span style="font-size:18px;font-weight:700;color:var(--pink)">' + c.score + '%</span>' +
               '</div>' +
-              '<span style="font-size:18px;font-weight:700;color:var(--accent)">' + c.score + '%</span>' +
             '</div>' +
           '</div>' +
         '</div>' +
-      '</div>';
+      '</section>';
 
     document.getElementById('mainContent').innerHTML = mainHtml;
 
